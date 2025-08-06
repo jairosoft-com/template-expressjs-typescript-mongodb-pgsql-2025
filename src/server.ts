@@ -4,6 +4,9 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import config from './config';
 import logger from './utils/logger';
+import { connectPostgres, closePostgres } from './database/postgres';
+import { connectMongo, closeMongo } from './database/mongo';
+import { connectRedis, closeRedis } from './database/redis';
 import { errorMiddleware } from './middleware/error.middleware';
 import { ApiError } from './utils/ApiError';
 import userRouter from './api/users/user.routes';
@@ -62,9 +65,73 @@ app.use('/api/v1/users', userRouter);
 app.use((_req, _res, next) => next(new ApiError(404, 'Not Found')));
 app.use(errorMiddleware);
 
-// Start Server
-app.listen(config.port, () => {
-  logger.info(`Server running on port ${config.port} in ${config.nodeEnv} mode.`);
-});
+/**
+ * Start the server with database connections
+ */
+const startServer = async () => {
+  try {
+    // Connect to all data sources
+    logger.info('Connecting to databases...');
+    await connectPostgres();
+    await connectMongo();
+    await connectRedis();
+    logger.info('All database connections established');
+
+    const server = app.listen(config.port, () => {
+      logger.info(`Server running on port ${config.port} in ${config.nodeEnv} mode`);
+    });
+
+    // Graceful shutdown handler
+    const shutdown = async (signal: string) => {
+      logger.info(`${signal} received. Shutting down gracefully...`);
+      
+      // Stop accepting new requests
+      server.close(async () => {
+        logger.info('HTTP server closed');
+        
+        // Close database connections
+        try {
+          await closePostgres();
+          await closeMongo();
+          await closeRedis();
+          logger.info('All database connections closed');
+        } catch (error) {
+          logger.error('Error closing database connections:', error);
+        }
+        
+        process.exit(0);
+      });
+
+      // Force exit after 10 seconds if graceful shutdown fails
+      setTimeout(() => {
+        logger.error('Forced shutdown after timeout');
+        process.exit(1);
+      }, 10000);
+    };
+
+    // Handle shutdown signals
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
+
+    // Handle uncaught exceptions
+    process.on('uncaughtException', (error) => {
+      logger.error('Uncaught Exception:', error);
+      shutdown('uncaughtException');
+    });
+
+    // Handle unhandled promise rejections
+    process.on('unhandledRejection', (reason, promise) => {
+      logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+      shutdown('unhandledRejection');
+    });
+
+  } catch (error) {
+    logger.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+// Start the server
+startServer();
 
 export default app; // Export for testing
