@@ -1,9 +1,10 @@
-# JairoJobs Express.js TypeScript Microservice Template
+# Express.js TypeScript Microservice Template
 
-A production-grade template for Express.js microservices with TypeScript, layered architecture, multi-database support, and comprehensive testing. This template provides a solid foundation for building scalable backend services with modern best practices.
+A production-grade template for Express.js microservices with TypeScript, featuring real-time capabilities, advanced security, and scalable microservices architecture. This template provides a solid foundation for building enterprise-level backend services with modern best practices.
 
 ## 🚀 Features
 
+### Core Infrastructure
 - **TypeScript 5.8+** - Full type safety with strict mode enabled
 - **Express.js 5.1** - Latest version with modern middleware support
 - **Multi-Database Architecture** - PostgreSQL, MongoDB, and Redis support
@@ -11,16 +12,39 @@ A production-grade template for Express.js microservices with TypeScript, layere
 - **Request Validation** - Zod schema validation for type-safe API inputs
 - **Comprehensive Testing** - Unit tests (Jest), API tests (Supertest), E2E tests (Playwright)
 - **Docker & Docker Compose** - Complete containerization with multi-service setup
-- **Security First** - Helmet, CORS, rate limiting, and security headers
+
+### 🔄 Real-time Features (Phase 5)
+- **WebSocket Server** - Socket.IO with authentication and real-time messaging
+- **Event-Driven Architecture** - Event emission, logging, and replay capabilities
+- **Real-time Notifications** - Live user notifications and system messages
+- **User Presence Tracking** - Online/offline status and activity monitoring
+- **Room-based Communication** - Group messaging and typing indicators
+
+### 🔐 Advanced Security (Phase 5)
+- **OAuth 2.0 Integration** - Google, GitHub, and Facebook authentication
+- **Two-Factor Authentication** - TOTP with QR codes and backup codes
+- **Account Security** - Brute force protection and account locking
+- **Security Headers** - Helmet, CORS, rate limiting, and security headers
+- **Input Validation** - Zod schema validation for all inputs
+
+### 🏗️ Microservices Architecture (Phase 5)
+- **Service Discovery** - Dynamic service registration and health monitoring
+- **API Gateway** - Request routing, load balancing, and circuit breaking
+- **Load Balancing** - Multiple strategies (round-robin, least-connections, random)
+- **Service Communication** - Inter-service communication patterns
+- **Health Monitoring** - Real-time service health checks
+
+### Developer Experience
 - **Structured Logging** - Winston logger with configurable log levels
 - **Error Handling** - Centralized error handling with custom ApiError class
 - **Code Quality** - ESLint + Prettier with TypeScript support
 - **Hot Reload** - Development server with nodemon
-- **Cross-Browser E2E Testing** - Chrome, Firefox, and Safari support
+- **API Documentation** - Swagger/OpenAPI with interactive docs
+- **Development Tools** - Database seeding, test data generation, setup scripts
 
 ## 📋 Prerequisites
 
-- **Node.js 22+** (for latest ES2022 features)
+- **Node.js 18+** (for latest ES2022 features)
 - **npm 10+** or **yarn**
 - **Docker and Docker Compose** (for containerized development)
 - **Git**
@@ -30,7 +54,7 @@ A production-grade template for Express.js microservices with TypeScript, layere
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd jairojobs-expressjs-typescript-mongodb-pgsql-2025
+   cd template-expressjs-typescript-mongodb-pgsql-2025
    ```
 
 2. **Install dependencies**
@@ -68,6 +92,76 @@ A production-grade template for Express.js microservices with TypeScript, layere
 | `npm run test:e2e:report` | Show Playwright test report |
 | `npm run lint` | Run ESLint for code quality |
 | `npm run lint:fix` | Fix ESLint errors automatically |
+| `npm run seed` | Seed database with initial data |
+| `npm run generate:test-data` | Generate test data for development |
+| `npm run setup:dev` | Setup development environment |
+| `npm run health` | Check API health status |
+| `npm run docs` | View API documentation URL |
+| `npm run clean` | Clean build artifacts and test results |
+| `npm run reset` | Reset project to clean state |
+
+## 🔄 Real-time Features
+
+### WebSocket Server
+- **URL**: `ws://localhost:4010`
+- **Authentication**: JWT token required
+- **Features**:
+  - Real-time notifications
+  - User presence tracking
+  - Room-based messaging
+  - Typing indicators
+  - Activity broadcasting
+
+### Event System
+- **Event Types**: User, System, Data, Notification events
+- **Features**:
+  - Priority-based event handling
+  - Event persistence and replay
+  - Retry mechanism with exponential backoff
+  - Event statistics and monitoring
+
+## 🔐 Advanced Security
+
+### OAuth Providers
+- **Google OAuth**: Profile and email access
+- **GitHub OAuth**: Repository and user data
+- **Facebook OAuth**: Social profile integration
+- **Features**:
+  - Account linking and unlinking
+  - Profile synchronization
+  - Email verification
+  - Provider-specific data handling
+
+### Two-Factor Authentication
+- **TOTP Implementation**: RFC 6238 compliant
+- **QR Code Generation**: For authenticator apps
+- **Backup Codes**: 10 secure backup codes
+- **Features**:
+  - Enable/disable 2FA
+  - Backup code regeneration
+  - Account recovery options
+  - Security audit logging
+
+## 🏗️ Microservices Architecture
+
+### Service Discovery
+- **Health Monitoring**: Real-time service health checks
+- **Load Balancing**: Round-robin, least-connections, random
+- **Features**:
+  - Service registration/deregistration
+  - Heartbeat monitoring
+  - Automatic cleanup of expired services
+  - Service statistics and metrics
+
+### API Gateway
+- **Routing**: Dynamic service routing
+- **Authentication**: JWT token validation
+- **Rate Limiting**: Per-service rate limiting
+- **Features**:
+  - Request/response transformation
+  - Error handling and circuit breaking
+  - Request logging and monitoring
+  - Service endpoint management
 
 ## 🐳 Docker Setup
 
@@ -86,10 +180,10 @@ docker-compose logs -f app
 ### Production Build
 ```bash
 # Build production image
-docker build -t jairojobs-microservice .
+docker build -t express-microservice .
 
 # Run with environment file
-docker run -p 3001:3001 --env-file .env jairojobs-microservice
+docker run -p 4010:4010 --env-file .env express-microservice
 ```
 
 ### E2E Testing Container
@@ -102,33 +196,18 @@ docker-compose run playwright-tests npm run test:e2e
 
 ### Health Check
 - `GET /` - Returns API health status
-  ```json
-  {
-    "message": "API is healthy"
-  }
-  ```
+- `GET /api/v1/health` - Comprehensive health check
+- `GET /api/v1/health/ready` - Readiness probe
+- `GET /api/v1/health/live` - Liveness probe
 
 ### User Authentication
 - `POST /api/v1/users/register` - Register a new user
   ```json
   {
-    "name": "John Doe",
+    "firstName": "John",
+    "lastName": "Doe",
     "email": "john@example.com",
     "password": "securepassword123"
-  }
-  ```
-  **Response:**
-  ```json
-  {
-    "message": "User registered successfully",
-    "data": {
-      "user": {
-        "id": "user_id",
-        "name": "John Doe",
-        "email": "john@example.com"
-      },
-      "token": "jwt_token_here"
-    }
   }
   ```
 
@@ -139,20 +218,22 @@ docker-compose run playwright-tests npm run test:e2e
     "password": "securepassword123"
   }
   ```
-  **Response:**
-  ```json
-  {
-    "message": "Login successful",
-    "data": {
-      "user": {
-        "id": "user_id",
-        "name": "John Doe",
-        "email": "john@example.com"
-      },
-      "token": "jwt_token_here"
-    }
-  }
-  ```
+
+### OAuth Authentication
+- `GET /api/v1/auth/google` - Google OAuth login
+- `GET /api/v1/auth/github` - GitHub OAuth login
+- `GET /api/v1/auth/facebook` - Facebook OAuth login
+
+### Two-Factor Authentication
+- `POST /api/v1/auth/2fa/setup` - Setup 2FA
+- `POST /api/v1/auth/2fa/verify` - Verify 2FA token
+- `POST /api/v1/auth/2fa/disable` - Disable 2FA
+- `POST /api/v1/auth/2fa/backup-codes` - Generate backup codes
+
+### Real-time Features
+- `ws://localhost:4010` - WebSocket connection
+- Real-time notifications and messaging
+- User presence tracking
 
 ## 🏗️ Project Architecture
 
@@ -163,6 +244,12 @@ This template follows a clean, layered architecture pattern:
 - **Service Layer** - Business logic and data processing
 - **Data Layer** - Database models and connections
 - **Validation Layer** - Input validation with Zod schemas
+
+### Microservices Architecture
+- **API Gateway** - Request routing and load balancing
+- **Service Discovery** - Dynamic service registration
+- **Event-Driven Communication** - Asynchronous service communication
+- **Circuit Breaker Pattern** - Fault tolerance and resilience
 
 ### Feature-Based Organization
 Each feature is self-contained with all related files:
@@ -179,38 +266,59 @@ src/api/users/
 ## 📁 Project Structure
 
 ```
-jairojobs-expressjs-typescript-mongodb-pgsql-2025/
+template-expressjs-typescript-mongodb-pgsql-2025/
 ├── src/                          # Main source code
 │   ├── api/                      # API layer (feature-based)
-│   │   └── users/               # User feature module
-│   │       ├── user.controller.ts    # Request/Response handling
-│   │       ├── user.service.ts       # Business logic
-│   │       ├── user.routes.ts        # Route definitions
-│   │       ├── user.types.ts         # TypeScript interfaces
-│   │       ├── user.validation.ts    # Zod validation schemas
-│   │       └── user.service.spec.ts  # Unit tests
+│   │   ├── users/               # User feature module
+│   │   │   ├── user.controller.ts    # Request/Response handling
+│   │   │   ├── user.service.ts       # Business logic
+│   │   │   ├── user.routes.ts        # Route definitions
+│   │   │   ├── user.types.ts         # TypeScript interfaces
+│   │   │   ├── user.validation.ts    # Zod validation schemas
+│   │   │   └── user.service.spec.ts  # Unit tests
+│   │   └── health/              # Health check endpoints
+│   │       ├── health.controller.ts
+│   │       └── health.routes.ts
+│   ├── services/                # Business logic services
+│   │   ├── socket.service.ts         # WebSocket & real-time
+│   │   ├── event.service.ts          # Event-driven architecture
+│   │   ├── oauth.service.ts          # OAuth authentication
+│   │   ├── two-factor.service.ts     # 2FA implementation
+│   │   ├── service-discovery.service.ts # Service registry
+│   │   └── api-gateway.service.ts    # API routing & load balancing
 │   ├── config/                   # Configuration management
-│   │   └── index.ts             # Environment config with Zod validation
+│   │   ├── index.ts             # Environment config with Zod validation
+│   │   └── swagger.ts           # Swagger/OpenAPI configuration
 │   ├── database/                 # Database connections & models
-│   │   ├── models/              # Mongoose models
-│   │   │   └── user.model.ts    # User data model
+│   │   ├── models/              # Database models
+│   │   │   └── user.model.ts    # Enhanced user model with OAuth & 2FA
+│   │   ├── repositories/        # Data access layer
 │   │   ├── mongo.ts             # MongoDB connection
 │   │   ├── postgres.ts          # PostgreSQL connection
 │   │   └── redis.ts             # Redis connection
 │   ├── middleware/              # Express middleware
 │   │   ├── auth.middleware.ts   # JWT authentication
 │   │   ├── error.middleware.ts  # Error handling
-│   │   └── validation.middleware.ts # Request validation
+│   │   ├── validation.middleware.ts # Request validation
+│   │   ├── cache.middleware.ts  # Redis caching
+│   │   └── logging.middleware.ts # Request/response logging
 │   ├── utils/                   # Utility functions
 │   │   ├── ApiError.ts          # Custom error class
 │   │   └── logger.ts            # Winston logger setup
 │   ├── types/                   # TypeScript type definitions
 │   │   └── express/             # Express type extensions
 │   └── server.ts                # Application entry point
+├── scripts/                     # Development utilities
+│   ├── seed-database.ts         # Database seeding
+│   ├── generate-test-data.ts    # Test data generation
+│   ├── setup-dev.ts             # Development environment setup
+│   └── README.md                # Scripts documentation
 ├── e2e/                         # End-to-end tests (Playwright)
 │   ├── pages/                   # Page Object Models
 │   ├── api.e2e.spec.ts          # API E2E tests
 │   └── register.spec.ts         # Registration flow tests
+├── api-docs/                    # API documentation
+│   └── openapi.yaml             # OpenAPI specification
 ├── dist/                        # Compiled JavaScript output
 ├── docker-compose.yml           # Multi-service Docker setup
 ├── Dockerfile                   # Production Docker image
@@ -263,18 +371,32 @@ Create a `.env` file with the following variables:
 ```env
 # Application
 NODE_ENV=development
-PORT=3001
+PORT=4010
 LOG_LEVEL=info
 CORS_ORIGIN=*
+BASE_URL=http://localhost:4010
 
 # JWT Authentication
-JWT_SECRET=your-super-secret-jwt-key-here
-JWT_EXPIRES_IN=1d
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+JWT_EXPIRES_IN=24h
 
-# Database URLs
-POSTGRES_URL=postgresql://postgres:password@localhost:5432/mydatabase
-MONGO_URL=mongodb://localhost:27017/jairojobs
-REDIS_URL=redis://localhost:6379
+# Database Configuration
+MONGODB_URI=mongodb://localhost:27017/express-template
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=express_template
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=password
+REDIS_HOST=localhost
+REDIS_PORT=6379
+
+# OAuth Configuration (Optional)
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+FACEBOOK_CLIENT_ID=your_facebook_client_id
+FACEBOOK_CLIENT_SECRET=your_facebook_client_secret
 ```
 
 ### Environment Validation
@@ -286,8 +408,11 @@ The application uses Zod to validate all environment variables at startup, ensur
 - **CORS** - Configurable cross-origin resource sharing
 - **Rate Limiting** - API rate limiting protection
 - **JWT Authentication** - Secure token-based auth
+- **OAuth 2.0** - Google, GitHub, Facebook integration
+- **Two-Factor Authentication** - TOTP with backup codes
 - **Password Hashing** - bcrypt for secure password storage
 - **Input Validation** - Zod schema validation
+- **Account Protection** - Brute force prevention and account locking
 - **Error Handling** - Secure error responses
 
 ## 🚀 Deployment
@@ -298,19 +423,42 @@ The application uses Zod to validate all environment variables at startup, ensur
 3. **Logging** - Configure appropriate log levels
 4. **Security** - Use strong JWT secrets and HTTPS
 5. **Monitoring** - Implement health checks and metrics
+6. **OAuth Configuration** - Configure OAuth providers for production
+7. **2FA Setup** - Ensure 2FA is properly configured
+8. **Service Discovery** - Configure service discovery for production
 
 ### Docker Production
 ```bash
 # Build optimized production image
-docker build -t jairojobs-microservice:latest .
+docker build -t express-microservice:latest .
 
 # Run with production environment
 docker run -d \
-  --name jairojobs-app \
-  -p 3001:3001 \
+  --name express-app \
+  -p 4010:4010 \
   --env-file .env.production \
-  jairojobs-microservice:latest
+  express-microservice:latest
 ```
+
+## 📊 Monitoring & Observability
+
+### Health Checks
+- **Root Health**: `GET /` - Basic API health
+- **Comprehensive Health**: `GET /api/v1/health` - Full system health
+- **Readiness Probe**: `GET /api/v1/health/ready` - Kubernetes readiness
+- **Liveness Probe**: `GET /api/v1/health/live` - Kubernetes liveness
+
+### Logging
+- **Structured Logging** - Winston with JSON formatting
+- **Request Logging** - All HTTP requests and responses
+- **Performance Monitoring** - Response time tracking
+- **Error Logging** - Comprehensive error tracking
+
+### Metrics
+- **Service Discovery** - Service health and statistics
+- **API Gateway** - Request routing and performance metrics
+- **Event System** - Event processing statistics
+- **WebSocket** - Connection and message metrics
 
 ## 🤝 Contributing
 
@@ -335,3 +483,41 @@ For issues and questions:
 ---
 
 **Built with ❤️ using modern Node.js and TypeScript best practices**
+
+### 🎯 Key Features Summary
+
+#### ✅ **Phase 1: Core Setup**
+- Express.js server with TypeScript
+- Multi-database support (MongoDB, PostgreSQL, Redis)
+- JWT authentication system
+- Security middleware (Helmet, CORS, Rate Limiting)
+- Input validation with Zod
+
+#### ✅ **Phase 2: Testing & Quality**
+- Unit tests with Jest
+- Integration tests
+- E2E tests with Playwright
+- Test coverage reporting
+
+#### ✅ **Phase 3: Production Readiness**
+- Comprehensive error handling
+- Structured logging with Winston
+- Performance monitoring
+- Docker containerization
+- CI/CD pipeline
+
+#### ✅ **Phase 4: Developer Experience**
+- Swagger/OpenAPI documentation
+- Database seeding scripts
+- Test data generation
+- Development environment setup
+- Health check endpoints
+- Request/response logging
+- Performance monitoring
+
+#### ✅ **Phase 5: Advanced Features**
+- **Real-time Features**: WebSocket server with Socket.IO, event-driven architecture
+- **Advanced Security**: OAuth 2.0 integration, two-factor authentication
+- **Microservices Architecture**: Service discovery, API Gateway, load balancing
+
+This template is now **enterprise-ready** with comprehensive features for building scalable, secure, and maintainable microservices.
