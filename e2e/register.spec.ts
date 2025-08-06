@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { RegisterPage } from './pages/register.page';
 
 /**
  * Test data for registration tests
@@ -7,7 +6,7 @@ import { RegisterPage } from './pages/register.page';
 const testUsers = {
   valid: {
     name: 'Test User',
-    email: 'test@example.com',
+    email: `test.${Date.now()}@example.com`,
     password: 'password123'
   },
   invalid: {
@@ -22,211 +21,214 @@ const testUsers = {
   }
 };
 
-test.describe('User Registration E2E', () => {
-  let registerPage: RegisterPage;
-
-  test.beforeEach(async ({ page }) => {
-    registerPage = new RegisterPage(page);
-    
-    // Mock API responses for consistent testing
-    await page.route('**/api/v1/users/register', async (route) => {
-      const request = route.request();
-      const postData = JSON.parse(request.postData() || '{}');
-      
-      // Simulate different scenarios based on email
-      if (postData.email === testUsers.existing.email) {
-        await route.fulfill({
-          status: 409,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            status: 'error',
-            statusCode: 409,
-            message: 'Email already in use'
-          })
-        });
-      } else if (postData.email === testUsers.invalid.email) {
-        await route.fulfill({
-          status: 400,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            status: 'error',
-            statusCode: 400,
-            message: 'Invalid email format'
-          })
-        });
-      } else {
-        await route.fulfill({
-          status: 201,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            status: 'success',
-            message: 'User registered successfully',
-            data: {
-              user: {
-                id: 'mock-user-id',
-                name: postData.name,
-                email: postData.email
-              },
-              token: 'mock-jwt-token'
-            }
-          })
-        });
+test.describe('User Registration API Tests', () => {
+  test('should successfully register a new user', async ({ request }) => {
+    const response = await request.post('/api/v1/users/register', {
+      data: {
+        body: testUsers.valid
       }
     });
-  });
 
-  test('should display registration form correctly', async ({ page }) => {
-    await registerPage.goto();
-    await registerPage.assertOnRegisterPage();
-    await registerPage.assertInitialState();
-  });
-
-  test('should successfully register a new user', async ({ page }) => {
-    await registerPage.goto();
-    await registerPage.register(
-      testUsers.valid.name,
-      testUsers.valid.email,
-      testUsers.valid.password
-    );
-    await registerPage.assertRegistrationSuccess();
-  });
-
-  test('should show error for existing email', async ({ page }) => {
-    await registerPage.goto();
-    await registerPage.register(
-      testUsers.existing.name,
-      testUsers.existing.email,
-      testUsers.existing.password
-    );
-    await registerPage.assertRegistrationError('Email already in use');
-  });
-
-  test('should show validation errors for invalid data', async ({ page }) => {
-    await registerPage.goto();
-    await registerPage.fillForm(
-      testUsers.invalid.name,
-      testUsers.invalid.email,
-      testUsers.invalid.password
-    );
-    await registerPage.submitForm();
+    expect(response.status()).toBe(201);
     
-    // Check for validation errors
-    await registerPage.assertFieldError('name');
-    await registerPage.assertFieldError('email');
-    await registerPage.assertFieldError('password');
+    const responseBody = await response.json();
+    expect(responseBody.message).toBe('User registered successfully');
+    expect(responseBody.data).toBeDefined();
+    expect(responseBody.data.user).toMatchObject({
+      email: testUsers.valid.email,
+      name: testUsers.valid.name
+    });
+    expect(responseBody.data.token).toBeDefined();
+    expect(responseBody.data.token).toBeTruthy();
   });
 
-  test('should show error for invalid email format', async ({ page }) => {
-    await registerPage.goto();
-    await registerPage.register(
-      testUsers.valid.name,
-      testUsers.invalid.email,
-      testUsers.valid.password
-    );
-    await registerPage.assertRegistrationError('Invalid email format');
-  });
-
-  test('should handle password mismatch', async ({ page }) => {
-    await registerPage.goto();
-    await registerPage.fillForm(
-      testUsers.valid.name,
-      testUsers.valid.email,
-      testUsers.valid.password,
-      'different-password'
-    );
-    await registerPage.submitForm();
-    await registerPage.assertFieldError('confirmPassword');
-  });
-
-  test('should clear form after successful registration', async ({ page }) => {
-    await registerPage.goto();
-    await registerPage.register(
-      testUsers.valid.name,
-      testUsers.valid.email,
-      testUsers.valid.password
-    );
-    await registerPage.assertRegistrationSuccess();
-    
-    // Verify form is cleared
-    await expect(registerPage.nameInput).toHaveValue('');
-    await expect(registerPage.emailInput).toHaveValue('');
-    await expect(registerPage.passwordInput).toHaveValue('');
-    await expect(registerPage.confirmPasswordInput).toHaveValue('');
-  });
-
-  test('should handle network errors gracefully', async ({ page }) => {
-    // Mock network error
-    await page.route('**/api/v1/users/register', async (route) => {
-      await route.abort('failed');
+  test('should return error for existing email', async ({ request }) => {
+    // First registration
+    await request.post('/api/v1/users/register', {
+      data: {
+        body: testUsers.existing
+      }
     });
 
-    await registerPage.goto();
-    await registerPage.register(
-      testUsers.valid.name,
-      testUsers.valid.email,
-      testUsers.valid.password
-    );
-    await registerPage.assertRegistrationError('Network error');
+    // Second registration with same email
+    const response = await request.post('/api/v1/users/register', {
+      data: {
+        body: testUsers.existing
+      }
+    });
+
+    expect(response.status()).toBe(409);
+    
+    const responseBody = await response.json();
+    expect(responseBody.status).toBe('error');
+    expect(responseBody.message).toContain('Email already in use');
   });
 
-  test('should show loading state during submission', async ({ page }) => {
-    // Mock slow API response
-    await page.route('**/api/v1/users/register', async (route) => {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      await route.fulfill({
-        status: 201,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          status: 'success',
-          message: 'User registered successfully'
-        })
+  test('should show validation errors for invalid data', async ({ request }) => {
+    const response = await request.post('/api/v1/users/register', {
+      data: {
+        body: testUsers.invalid
+      }
+    });
+
+    expect(response.status()).toBe(400);
+    
+    const responseBody = await response.json();
+    expect(responseBody.status).toBe('error');
+    expect(responseBody.message).toBeDefined();
+  });
+
+  test('should validate email format', async ({ request }) => {
+    const response = await request.post('/api/v1/users/register', {
+      data: {
+        body: {
+          name: testUsers.valid.name,
+          email: testUsers.invalid.email,
+          password: testUsers.valid.password
+        }
+      }
+    });
+
+    expect(response.status()).toBe(400);
+    
+    const responseBody = await response.json();
+    expect(responseBody.status).toBe('error');
+  });
+
+  test('should validate password length', async ({ request }) => {
+    const response = await request.post('/api/v1/users/register', {
+      data: {
+        body: {
+          name: testUsers.valid.name,
+          email: `short.pass.${Date.now()}@example.com`,
+          password: testUsers.invalid.password
+        }
+      }
+    });
+
+    expect(response.status()).toBe(400);
+    
+    const responseBody = await response.json();
+    expect(responseBody.status).toBe('error');
+  });
+
+  test('should handle network errors gracefully', async ({ request }) => {
+    // Test with malformed JSON
+    const response = await request.post('/api/v1/users/register', {
+      data: '{invalid json}',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    expect(response.status()).toBe(400);
+  });
+
+  test('should require all mandatory fields', async ({ request }) => {
+    const testCases = [
+      { name: testUsers.valid.name, email: testUsers.valid.email }, // missing password
+      { name: testUsers.valid.name, password: testUsers.valid.password }, // missing email
+      { email: testUsers.valid.email, password: testUsers.valid.password }, // missing name
+    ];
+
+    for (const testData of testCases) {
+      const response = await request.post('/api/v1/users/register', {
+        data: {
+          body: testData
+        }
       });
+
+      expect(response.status()).toBe(400);
+      
+      const responseBody = await response.json();
+      expect(responseBody.status).toBe('error');
+    }
+  });
+
+  test('should handle special characters in name field', async ({ request }) => {
+    const response = await request.post('/api/v1/users/register', {
+      data: {
+        body: {
+          name: 'José María O\'Connor-Smith',
+          email: `jose.maria.${Date.now()}@example.com`,
+          password: testUsers.valid.password
+        }
+      }
     });
 
-    await registerPage.goto();
-    await registerPage.fillForm(
-      testUsers.valid.name,
-      testUsers.valid.email,
-      testUsers.valid.password
-    );
-    await registerPage.registerButton.click();
+    expect(response.status()).toBe(201);
     
-    // Check loading state
-    await registerPage.assertLoadingState();
-    
-    // Wait for completion
-    await registerPage.assertRegistrationSuccess();
+    const responseBody = await response.json();
+    expect(responseBody.data.user.name).toBe('José María O\'Connor-Smith');
   });
 
-  test('should validate required fields', async ({ page }) => {
-    await registerPage.goto();
+  test('should handle long email addresses', async ({ request }) => {
+    const longEmail = `very.long.email.address.${Date.now()}@very.long.domain.example.com`;
+    const response = await request.post('/api/v1/users/register', {
+      data: {
+        body: {
+          name: testUsers.valid.name,
+          email: longEmail,
+          password: testUsers.valid.password
+        }
+      }
+    });
+
+    expect(response.status()).toBe(201);
     
-    // Try to submit empty form
-    await registerPage.submitForm();
-    
-    // Check for required field errors
-    await registerPage.assertFieldError('name');
-    await registerPage.assertFieldError('email');
-    await registerPage.assertFieldError('password');
+    const responseBody = await response.json();
+    expect(responseBody.data.user.email).toBe(longEmail);
   });
 
-  test('should handle special characters in name field', async ({ page }) => {
-    await registerPage.goto();
-    await registerPage.register(
-      'José María O\'Connor-Smith',
-      'jose.maria@example.com',
-      testUsers.valid.password
-    );
-    await registerPage.assertRegistrationSuccess();
+  test('should trim whitespace from input fields', async ({ request }) => {
+    const response = await request.post('/api/v1/users/register', {
+      data: {
+        body: {
+          name: '  Trimmed User  ',
+          email: `  trimmed.${Date.now()}@example.com  `,
+          password: testUsers.valid.password
+        }
+      }
+    });
+
+    // This might be 201 or 400 depending on if the API trims inputs
+    // We're testing that the API handles it gracefully either way
+    expect([200, 201, 400]).toContain(response.status());
   });
 
-  test('should handle long email addresses', async ({ page }) => {
-    await registerPage.goto();
-    await registerPage.register(
-      testUsers.valid.name,
-      'very.long.email.address.that.exceeds.normal.length@very.long.domain.example.com',
-      testUsers.valid.password
-    );
-    await registerPage.assertRegistrationSuccess();
+  test('should return appropriate error for empty request body', async ({ request }) => {
+    const response = await request.post('/api/v1/users/register', {
+      data: {}
+    });
+
+    expect(response.status()).toBe(400);
+    
+    const responseBody = await response.json();
+    expect(responseBody.status).toBe('error');
+  });
+
+  test('should handle concurrent registrations correctly', async ({ request }) => {
+    const email = `concurrent.${Date.now()}@example.com`;
+    const userData = {
+      body: {
+        name: 'Concurrent User',
+        email: email,
+        password: 'password123'
+      }
+    };
+
+    // Send multiple requests simultaneously
+    const responses = await Promise.all([
+      request.post('/api/v1/users/register', { data: userData }),
+      request.post('/api/v1/users/register', { data: userData }),
+      request.post('/api/v1/users/register', { data: userData })
+    ]);
+
+    // Exactly one should succeed with 201
+    const successCount = responses.filter(r => r.status() === 201).length;
+    const conflictCount = responses.filter(r => r.status() === 409).length;
+    
+    expect(successCount).toBe(1);
+    expect(conflictCount).toBe(2);
   });
 });

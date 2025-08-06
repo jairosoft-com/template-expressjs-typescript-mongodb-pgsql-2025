@@ -1,6 +1,7 @@
 import { UserPublicData } from '../../api/users/user.types';
-import UserModel from '../models/user.model';
+import { UserModel } from '../models/user.model';
 import { ApiError } from '../../utils/ApiError';
+import { mockUserRepository } from './mock.user.repository';
 
 /**
  * User Repository
@@ -180,4 +181,7 @@ export class UserRepository {
 }
 
 // Export a singleton instance
-export const userRepository = new UserRepository();
+// Use mock repository when databases are not connected
+export const userRepository = process.env.SKIP_DB_CONNECTION === 'true' 
+  ? mockUserRepository 
+  : new UserRepository();

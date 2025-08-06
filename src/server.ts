@@ -20,7 +20,6 @@ import { eventService } from './services/event.service';
 
 // Phase 5: Advanced Security
 import { oauthService } from './services/oauth.service';
-import { twoFactorService } from './services/two-factor.service';
 
 // Phase 5: Microservices Architecture
 import { serviceDiscoveryService } from './services/service-discovery.service';
@@ -121,7 +120,7 @@ app.use('/api/v1/users', userRouter);
 app.use('/api/v1/health', healthRouter);
 
 // Phase 5: API Gateway routing
-app.use('/api/v1/*', (req: Request, res: Response, next: NextFunction) => {
+app.use('/api/v1/gateway', (req: Request, res: Response, next: NextFunction) => {
   apiGatewayService.routeRequest(req, res, next);
 });
 
@@ -135,12 +134,16 @@ app.use(errorMiddleware);
  */
 const startServer = async () => {
   try {
-    // Connect to all data sources
-    logger.info('Connecting to databases...');
-    await connectPostgres();
-    await connectMongo();
-    await connectRedis();
-    logger.info('All database connections established');
+    // Connect to all data sources (skip in test mode if SKIP_DB_CONNECTION is set)
+    if (process.env.SKIP_DB_CONNECTION !== 'true') {
+      logger.info('Connecting to databases...');
+      await connectPostgres();
+      await connectMongo();
+      await connectRedis();
+      logger.info('All database connections established');
+    } else {
+      logger.info('Skipping database connections (SKIP_DB_CONNECTION=true)');
+    }
 
     // Phase 5: Initialize services
     logger.info('Initializing Phase 5 services...');

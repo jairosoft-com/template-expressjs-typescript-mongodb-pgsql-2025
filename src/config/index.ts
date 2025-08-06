@@ -5,7 +5,7 @@ dotenv.config();
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  PORT: z.string().transform(Number).default('4010'),
+  PORT: z.string().default('4010').transform(Number),
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
   CORS_ORIGIN: z.string().default('*'),
   
@@ -16,12 +16,12 @@ const envSchema = z.object({
   // Database Configuration
   MONGODB_URI: z.string().default('mongodb://localhost:27017/express-template'),
   POSTGRES_HOST: z.string().default('localhost'),
-  POSTGRES_PORT: z.string().transform(Number).default('5432'),
+  POSTGRES_PORT: z.string().default('5432').transform(Number),
   POSTGRES_DB: z.string().default('express_template'),
   POSTGRES_USER: z.string().default('postgres'),
   POSTGRES_PASSWORD: z.string().default('password'),
   REDIS_HOST: z.string().default('localhost'),
-  REDIS_PORT: z.string().transform(Number).default('6379'),
+  REDIS_PORT: z.string().default('6379').transform(Number),
   
   // OAuth Configuration
   GOOGLE_CLIENT_ID: z.string().optional(),
