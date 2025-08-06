@@ -4,6 +4,15 @@ import * as userService from './user.service';
 import { registerUser, loginUser } from './user.controller';
 import { ApiError } from '../../utils/ApiError';
 
+// Mock config before importing anything that uses it
+jest.mock('../../config', () => ({
+  jwt: {
+    secret: 'test-secret-key-that-is-at-least-32-characters-long',
+    expiresIn: '1d'
+  },
+  nodeEnv: 'test'
+}));
+
 // Mock the user service
 jest.mock('./user.service');
 
@@ -44,7 +53,7 @@ describe('User Controller', () => {
       };
       const mockToken = 'mock-jwt-token';
 
-      mockRequest.body = validRegistrationData;
+      mockRequest.body = { body: validRegistrationData };
       mockUserService.registerNewUser.mockResolvedValue({
         user: mockUser,
         token: mockToken
@@ -69,16 +78,7 @@ describe('User Controller', () => {
     });
 
     it('should handle validation errors', async () => {
-      const validationError = new ZodError([
-        {
-          code: 'invalid_string',
-          message: 'Invalid email',
-          path: ['body', 'email']
-        }
-      ]);
-
-      mockRequest.body = { invalid: 'data' };
-      mockUserService.registerNewUser.mockRejectedValue(validationError);
+      mockRequest.body = { invalid: 'data' }; // Invalid data structure
 
       await registerUser(
         mockRequest as Request,
@@ -86,14 +86,17 @@ describe('User Controller', () => {
         mockNext
       );
 
-      expect(mockNext).toHaveBeenCalledWith(validationError);
+      // The actual error will be a ZodError from parsing
+      expect(mockNext).toHaveBeenCalled();
+      const error = mockNext.mock.calls[0][0];
+      expect(error).toBeInstanceOf(ZodError);
       expect(mockResponse.status).not.toHaveBeenCalled();
       expect(mockResponse.json).not.toHaveBeenCalled();
     });
 
     it('should handle service errors', async () => {
       const serviceError = new ApiError(409, 'Email already in use');
-      mockRequest.body = validRegistrationData;
+      mockRequest.body = { body: validRegistrationData };
       mockUserService.registerNewUser.mockRejectedValue(serviceError);
 
       await registerUser(
@@ -109,7 +112,7 @@ describe('User Controller', () => {
 
     it('should handle unexpected errors', async () => {
       const unexpectedError = new Error('Database connection failed');
-      mockRequest.body = validRegistrationData;
+      mockRequest.body = { body: validRegistrationData };
       mockUserService.registerNewUser.mockRejectedValue(unexpectedError);
 
       await registerUser(
@@ -136,7 +139,7 @@ describe('User Controller', () => {
       };
       const mockToken = 'mock-jwt-token';
 
-      mockRequest.body = validLoginData;
+      mockRequest.body = { body: validLoginData };
       mockUserService.loginUser.mockResolvedValue({
         user: mockUser,
         token: mockToken
@@ -164,16 +167,7 @@ describe('User Controller', () => {
     });
 
     it('should handle validation errors for login', async () => {
-      const validationError = new ZodError([
-        {
-          code: 'invalid_string',
-          message: 'Invalid email',
-          path: ['body', 'email']
-        }
-      ]);
-
-      mockRequest.body = { invalid: 'data' };
-      mockUserService.loginUser.mockRejectedValue(validationError);
+      mockRequest.body = { invalid: 'data' }; // Invalid data structure
 
       await loginUser(
         mockRequest as Request,
@@ -181,12 +175,15 @@ describe('User Controller', () => {
         mockNext
       );
 
-      expect(mockNext).toHaveBeenCalledWith(validationError);
+      // The actual error will be a ZodError from parsing
+      expect(mockNext).toHaveBeenCalled();
+      const error = mockNext.mock.calls[0][0];
+      expect(error).toBeInstanceOf(ZodError);
     });
 
     it('should handle authentication errors', async () => {
       const authError = new ApiError(401, 'Invalid credentials');
-      mockRequest.body = validLoginData;
+      mockRequest.body = { body: validLoginData };
       mockUserService.loginUser.mockRejectedValue(authError);
 
       await loginUser(
@@ -214,9 +211,7 @@ describe('User Controller', () => {
 
   describe('Error Handling', () => {
     it('should pass errors to next middleware', async () => {
-      const error = new Error('Test error');
-      mockRequest.body = {};
-      mockUserService.registerNewUser.mockRejectedValue(error);
+      mockRequest.body = {}; // Will cause validation error
 
       await registerUser(
         mockRequest as Request,
@@ -224,7 +219,10 @@ describe('User Controller', () => {
         mockNext
       );
 
-      expect(mockNext).toHaveBeenCalledWith(error);
+      // Should pass the ZodError to the next middleware
+      expect(mockNext).toHaveBeenCalled();
+      const error = mockNext.mock.calls[0][0];
+      expect(error).toBeInstanceOf(ZodError);
     });
 
     it('should handle null request body', async () => {

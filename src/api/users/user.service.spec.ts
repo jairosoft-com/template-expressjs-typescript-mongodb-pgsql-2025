@@ -11,9 +11,10 @@ jest.mock('bcryptjs');
 jest.mock('jsonwebtoken');
 jest.mock('../../config', () => ({
   jwt: {
-    secret: 'test-secret',
+    secret: 'test-secret-key-that-is-at-least-32-characters-long',
     expiresIn: '1d'
-  }
+  },
+  nodeEnv: 'test'
 }));
 
 const mockUserRepository = userRepository as jest.Mocked<typeof userRepository>;

@@ -29,7 +29,7 @@ export const errorMiddleware = (
 
   // Log the error for debugging
   logger.error(
-    `${statusCode} - ${message} - ${req.originalUrl} - ${req.method} - ${req.ip}`,
+    `${statusCode} - ${message} - ${req?.originalUrl || 'unknown'} - ${req?.method || 'unknown'} - ${req?.ip || 'unknown'}`,
     { 
       stack: config.nodeEnv === 'development' ? error.stack : {},
       error: error.message 
