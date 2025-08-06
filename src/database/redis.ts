@@ -11,10 +11,10 @@ let redisClient: RedisClientType;
 
 // Implement singleton pattern for Redis client
 if (process.env.NODE_ENV === 'production') {
-  redisClient = createClient({ url: config.db.redisUrl });
+  redisClient = createClient({ url: config.redis.url });
 } else {
   if (!globalForRedis.redisClient) {
-    globalForRedis.redisClient = createClient({ url: config.db.redisUrl });
+    globalForRedis.redisClient = createClient({ url: config.redis.url });
   }
   redisClient = globalForRedis.redisClient;
 }

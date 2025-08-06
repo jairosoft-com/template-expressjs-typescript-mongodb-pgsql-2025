@@ -10,6 +10,9 @@ import { connectRedis, closeRedis } from './database/redis';
 import { errorMiddleware } from './middleware/error.middleware';
 import { ApiError } from './utils/ApiError';
 import userRouter from './api/users/user.routes';
+import healthRouter from './api/health/health.routes';
+import { setupSwagger } from './config/swagger';
+import { requestLogger, responseLogger, errorLogger, performanceMonitor } from './middleware/logging.middleware';
 
 const app: Express = express();
 
@@ -50,19 +53,64 @@ app.use(generalLimiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
+// Setup Swagger documentation
+setupSwagger(app);
+
+// Logging and monitoring middleware
+app.use(requestLogger);
+app.use(responseLogger);
+app.use(performanceMonitor);
+
+/**
+ * @swagger
+ * /:
+ *   get:
+ *     summary: Health check endpoint
+ *     description: Returns the health status of the API
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: API is healthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/HealthCheck'
+ *             example:
+ *               message: "API is healthy"
+ *               timestamp: "2025-01-15T10:30:00Z"
+ *               uptime: 12345.67
+ *               environment: "development"
+ *       500:
+ *         description: API is unhealthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               status: "error"
+ *               statusCode: 500
+ *               message: "API is unhealthy"
+ */
 app.get('/', (_req: Request, res: Response) => {
-  res.status(200).json({ message: 'API is healthy' });
+  res.status(200).json({
+    message: 'API is healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: config.nodeEnv,
+  });
 });
 
 // Apply stricter rate limiting to authentication endpoints
 app.use('/api/v1/users/login', authLimiter);
 app.use('/api/v1/users/register', authLimiter);
 
+// API Routes
 app.use('/api/v1/users', userRouter);
+app.use('/api/v1/health', healthRouter);
 
 // Error Handling
 app.use((_req, _res, next) => next(new ApiError(404, 'Not Found')));
+app.use(errorLogger);
 app.use(errorMiddleware);
 
 /**
@@ -79,6 +127,10 @@ const startServer = async () => {
 
     const server = app.listen(config.port, () => {
       logger.info(`Server running on port ${config.port} in ${config.nodeEnv} mode`);
+      logger.info(`API Documentation available at http://localhost:${config.port}/api-docs`);
+      logger.info(`Health check available at http://localhost:${config.port}/api/v1/health`);
+      logger.info(`Readiness probe available at http://localhost:${config.port}/api/v1/health/ready`);
+      logger.info(`Liveness probe available at http://localhost:${config.port}/api/v1/health/live`);
     });
 
     // Graceful shutdown handler

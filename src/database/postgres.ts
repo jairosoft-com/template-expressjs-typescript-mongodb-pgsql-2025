@@ -11,7 +11,7 @@ let pool: Pool;
 if (process.env.NODE_ENV === 'production') {
   // In production, always create a new pool
   pool = new Pool({
-    connectionString: config.db.postgresUrl,
+    connectionString: config.postgres.url,
     max: 20, // Maximum number of clients in the pool
     idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
     connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
@@ -20,7 +20,7 @@ if (process.env.NODE_ENV === 'production') {
   // In development, use singleton pattern to prevent multiple pools during hot reload
   if (!globalForPg.pgPool) {
     globalForPg.pgPool = new Pool({
-      connectionString: config.db.postgresUrl,
+      connectionString: config.postgres.url,
       max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 2000,

@@ -2,8 +2,10 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { z } from 'zod';
 
+// Load environment variables from .env file
 dotenv.config({ path: path.resolve(__dirname, `../../.env`) });
 
+// Define the schema for environment variables using Zod
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().default(3001),
@@ -11,18 +13,23 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().default('*'),
   JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
   JWT_EXPIRES_IN: z.string().default('1d'),
-  POSTGRES_URL: z.string().url(),
-  MONGO_URL: z.string().url(),
-  REDIS_URL: z.string().url(),
+  POSTGRES_URL: z.string().url('POSTGRES_URL must be a valid URL'),
+  MONGO_URL: z.string().url('MONGO_URL must be a valid URL'),
+  REDIS_URL: z.string().url('REDIS_URL must be a valid URL'),
 });
 
+// Validate process.env against the schema
 const parsedEnv = envSchema.safeParse(process.env);
 
 if (!parsedEnv.success) {
-  console.error('Invalid environment variables:', parsedEnv.error.flatten().fieldErrors);
+  console.error(
+    '❌ Invalid environment variables:',
+    parsedEnv.error.flatten().fieldErrors,
+  );
   throw new Error('Invalid environment variables.');
 }
 
+// Export the validated and typed configuration object
 const config = {
   nodeEnv: parsedEnv.data.NODE_ENV,
   port: parsedEnv.data.PORT,
@@ -32,10 +39,14 @@ const config = {
     secret: parsedEnv.data.JWT_SECRET,
     expiresIn: parsedEnv.data.JWT_EXPIRES_IN,
   },
-  db: {
-    postgresUrl: parsedEnv.data.POSTGRES_URL,
-    mongoUrl: parsedEnv.data.MONGO_URL,
-    redisUrl: parsedEnv.data.REDIS_URL,
+  postgres: {
+    url: parsedEnv.data.POSTGRES_URL,
+  },
+  mongo: {
+    url: parsedEnv.data.MONGO_URL,
+  },
+  redis: {
+    url: parsedEnv.data.REDIS_URL,
   },
 };
 
