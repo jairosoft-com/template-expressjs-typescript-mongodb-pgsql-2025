@@ -1,4 +1,4 @@
-import express, { Express, Request, Response } from 'express';
+import express, { Express, Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
@@ -13,6 +13,18 @@ import userRouter from './api/users/user.routes';
 import healthRouter from './api/health/health.routes';
 import { setupSwagger } from './config/swagger';
 import { requestLogger, responseLogger, errorLogger, performanceMonitor } from './middleware/logging.middleware';
+
+// Phase 5: Real-time Features
+import { socketService } from './services/socket.service';
+import { eventService } from './services/event.service';
+
+// Phase 5: Advanced Security
+import { oauthService } from './services/oauth.service';
+import { twoFactorService } from './services/two-factor.service';
+
+// Phase 5: Microservices Architecture
+import { serviceDiscoveryService } from './services/service-discovery.service';
+import { apiGatewayService } from './services/api-gateway.service';
 
 const app: Express = express();
 
@@ -108,6 +120,11 @@ app.use('/api/v1/users/register', authLimiter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/health', healthRouter);
 
+// Phase 5: API Gateway routing
+app.use('/api/v1/*', (req: Request, res: Response, next: NextFunction) => {
+  apiGatewayService.routeRequest(req, res, next);
+});
+
 // Error Handling
 app.use((_req, _res, next) => next(new ApiError(404, 'Not Found')));
 app.use(errorLogger);
@@ -125,17 +142,59 @@ const startServer = async () => {
     await connectRedis();
     logger.info('All database connections established');
 
+    // Phase 5: Initialize services
+    logger.info('Initializing Phase 5 services...');
+    
+    // Initialize OAuth service
+    oauthService.initialize();
+    logger.info('OAuth service initialized');
+
+    // Initialize service discovery
+    serviceDiscoveryService.registerService({
+      id: 'api-gateway-main',
+      name: 'api-gateway',
+      version: '1.0.0',
+      host: 'localhost',
+      port: config.port,
+      health: 'healthy',
+      metadata: {
+        environment: config.nodeEnv,
+        features: ['oauth', '2fa', 'websocket', 'microservices'],
+      },
+      endpoints: ['/api/v1/*'],
+    });
+    logger.info('Service discovery initialized');
+
+    // Emit system startup event
+    await eventService.emitEvent('system.startup', {
+      timestamp: new Date().toISOString(),
+      environment: config.nodeEnv,
+      version: '1.0.0',
+    });
+
     const server = app.listen(config.port, () => {
       logger.info(`Server running on port ${config.port} in ${config.nodeEnv} mode`);
       logger.info(`API Documentation available at http://localhost:${config.port}/api-docs`);
       logger.info(`Health check available at http://localhost:${config.port}/api/v1/health`);
       logger.info(`Readiness probe available at http://localhost:${config.port}/api/v1/health/ready`);
       logger.info(`Liveness probe available at http://localhost:${config.port}/api/v1/health/live`);
+      logger.info(`WebSocket available at ws://localhost:${config.port}`);
+      logger.info(`OAuth providers: ${oauthService.getAvailableProviders().join(', ')}`);
     });
+
+    // Phase 5: Initialize Socket.IO
+    socketService.initialize(server);
+    logger.info('Socket.IO server initialized');
 
     // Graceful shutdown handler
     const shutdown = async (signal: string) => {
       logger.info(`${signal} received. Shutting down gracefully...`);
+      
+      // Emit system shutdown event
+      await eventService.emitEvent('system.shutdown', {
+        signal,
+        timestamp: new Date().toISOString(),
+      });
       
       // Stop accepting new requests
       server.close(async () => {
@@ -150,6 +209,10 @@ const startServer = async () => {
         } catch (error) {
           logger.error('Error closing database connections:', error);
         }
+        
+        // Stop services
+        serviceDiscoveryService.stop();
+        logger.info('Service discovery stopped');
         
         process.exit(0);
       });
@@ -168,12 +231,27 @@ const startServer = async () => {
     // Handle uncaught exceptions
     process.on('uncaughtException', (error) => {
       logger.error('Uncaught Exception:', error);
+      
+      // Emit system error event
+      eventService.emitEvent('system.error', {
+        error: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString(),
+      });
+      
       shutdown('uncaughtException');
     });
 
     // Handle unhandled promise rejections
     process.on('unhandledRejection', (reason, promise) => {
       logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+      
+      // Emit system error event
+      eventService.emitEvent('system.error', {
+        error: reason instanceof Error ? reason.message : String(reason),
+        timestamp: new Date().toISOString(),
+      });
+      
       shutdown('unhandledRejection');
     });
 
