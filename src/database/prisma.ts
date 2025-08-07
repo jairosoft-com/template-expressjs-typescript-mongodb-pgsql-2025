@@ -3,7 +3,6 @@ import logger from '@common/utils/logger';
 
 // Define the type for our extended PrismaClient
 declare global {
-  // eslint-disable-next-line no-var
   var prisma: PrismaClient | undefined;
 }
 
@@ -38,11 +37,14 @@ const prisma = globalThis.prisma ?? prismaClientSingleton();
 if (process.env.NODE_ENV === 'development') {
   // Log queries in development
   (prisma as any).$on('query', (e: any) => {
-    logger.debug({
-      query: e.query,
-      params: e.params,
-      duration: e.duration,
-    }, 'Prisma Query');
+    logger.debug(
+      {
+        query: e.query,
+        params: e.params,
+        duration: e.duration,
+      },
+      'Prisma Query'
+    );
   });
 }
 

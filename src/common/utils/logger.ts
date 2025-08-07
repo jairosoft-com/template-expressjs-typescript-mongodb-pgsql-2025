@@ -18,37 +18,37 @@ const redactPaths = [
   'apiKey',
   '*.apiKey',
   'secret',
-  '*.secret'
+  '*.secret',
 ];
 
 // Create Pino logger configuration
 const loggerOptions: pino.LoggerOptions = {
   level: process.env.LOG_LEVEL || 'info',
-  
+
   // Redact sensitive information
   redact: {
     paths: redactPaths,
-    censor: '[REDACTED]'
+    censor: '[REDACTED]',
   },
-  
+
   // Add base fields to all logs
   base: {
     pid: process.pid,
-    hostname: process.env.HOSTNAME || 'localhost'
+    hostname: process.env.HOSTNAME || 'localhost',
   },
-  
+
   // Serializers for common objects
   serializers: {
     req: pino.stdSerializers.req,
     res: pino.stdSerializers.res,
-    err: pino.stdSerializers.err
+    err: pino.stdSerializers.err,
   },
-  
+
   // Format timestamp
   timestamp: pino.stdTimeFunctions.isoTime,
-  
+
   // Message key (use 'msg' for compatibility)
-  messageKey: 'msg'
+  messageKey: 'msg',
 };
 
 // Configure pretty printing for development
@@ -60,8 +60,8 @@ if (isDevelopment) {
       translateTime: 'SYS:standard',
       ignore: 'pid,hostname',
       messageFormat: '{msg}',
-      errorLikeObjectKeys: ['err', 'error']
-    }
+      errorLikeObjectKeys: ['err', 'error'],
+    },
   };
 }
 

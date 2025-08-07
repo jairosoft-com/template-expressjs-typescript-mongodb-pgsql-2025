@@ -14,7 +14,7 @@ class UsersComponent extends BaseComponent {
       description: 'User management and authentication',
       enabled: true,
       dependencies: [],
-      tags: ['users', 'authentication', 'auth']
+      tags: ['users', 'authentication', 'auth'],
     };
 
     super(metadata);
@@ -33,7 +33,7 @@ class UsersComponent extends BaseComponent {
    */
   public async initialize(): Promise<void> {
     await super.initialize();
-    
+
     this.logger.info('Users component ready');
   }
 
@@ -42,7 +42,7 @@ class UsersComponent extends BaseComponent {
    */
   public async shutdown(): Promise<void> {
     await super.shutdown();
-    
+
     this.logger.info('Users component shutdown complete');
   }
 }

@@ -51,7 +51,7 @@ async function main() {
       name: 'admin',
       description: 'Administrator role with full access',
       permissions: {
-        create: permissions.map(p => ({
+        create: permissions.map((p) => ({
           permission: { connect: { id: p.id } },
         })),
       },
@@ -176,7 +176,7 @@ async function main() {
   // Display created users
   console.log('\n📝 Test Users Created:');
   console.log('========================');
-  users.forEach(user => {
+  users.forEach((user) => {
     console.log(`Email: ${user.email}`);
     console.log(`Password: See seed file for passwords`);
     console.log('------------------------');
@@ -186,7 +186,7 @@ async function main() {
 }
 
 main()
-  .catch(e => {
+  .catch((e) => {
     console.error('❌ Error seeding database:', e);
     process.exit(1);
   })

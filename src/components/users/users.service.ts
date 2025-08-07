@@ -41,7 +41,7 @@ export class UserService extends BaseService {
     }
 
     // Create user using repository (password hashing handled by Prisma repository)
-    const newUser = USE_PRISMA 
+    const newUser = USE_PRISMA
       ? await this.repository.createUser(userData)
       : await this.repository.create({
           ...userData,
@@ -78,7 +78,7 @@ export class UserService extends BaseService {
     const user = USE_PRISMA
       ? await this.repository.findByEmail(email)
       : await this.repository.findByEmailWithPassword(email);
-    
+
     if (!user) {
       if (USE_PRISMA) {
         await this.repository.incrementLoginAttempts(email);
@@ -156,11 +156,11 @@ export class UserService extends BaseService {
     const updatedUser = USE_PRISMA
       ? await this.repository.updateUser(id, updateData)
       : await this.repository.updateById(id, updateData);
-    
+
     if (!updatedUser) {
       throw ApiError.notFound('User not found');
     }
-    
+
     return updatedUser;
   }
 
@@ -173,11 +173,11 @@ export class UserService extends BaseService {
     const deleted = USE_PRISMA
       ? await this.repository.delete(id)
       : await this.repository.deleteById(id);
-    
+
     if (!deleted) {
       throw ApiError.notFound('User not found');
     }
-    
+
     return true;
   }
 
@@ -209,11 +209,7 @@ export class UserService extends BaseService {
    * @param secret - The TOTP secret
    * @param backupCodes - Array of backup codes
    */
-  async enableTwoFactor(
-    userId: string,
-    secret: string,
-    backupCodes: string[]
-  ): Promise<void> {
+  async enableTwoFactor(userId: string, secret: string, backupCodes: string[]): Promise<void> {
     if (USE_PRISMA) {
       await this.repository.enableTwoFactor(userId, secret);
       await this.repository.addBackupCodes(userId, backupCodes);
@@ -233,7 +229,7 @@ export class UserService extends BaseService {
     if (USE_PRISMA) {
       return await this.repository.useBackupCode(userId, code);
     }
-    
+
     // Mongoose implementation would go here
     return false;
   }

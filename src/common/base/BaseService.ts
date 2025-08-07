@@ -39,7 +39,7 @@ export abstract class BaseService implements IComponentService {
     delay: number = 1000
   ): Promise<T> {
     let lastError: Error | undefined;
-    
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         return await operation();
@@ -49,13 +49,13 @@ export abstract class BaseService implements IComponentService {
           { err: error, attempt, maxRetries },
           `Operation failed, attempt ${attempt}/${maxRetries}`
         );
-        
+
         if (attempt < maxRetries) {
           await this.delay(delay * attempt);
         }
       }
     }
-    
+
     throw lastError || new Error('Operation failed after retries');
   }
 
@@ -71,18 +71,18 @@ export abstract class BaseService implements IComponentService {
         reject(new ApiError(408, `Operation timed out after ${timeoutMs}ms`));
       }, timeoutMs);
     });
-    
+
     return Promise.race([operation(), timeoutPromise]);
   }
 
   /**
    * Cache wrapper for operations
-   * 
+   *
    * TODO: Implement actual caching logic using Redis
    * Example implementation:
    * ```typescript
    * import redisClient from '@/database/redis';
-   * 
+   *
    * const cached = await redisClient.get(key);
    * if (cached) {
    *   return JSON.parse(cached);
@@ -106,7 +106,7 @@ export abstract class BaseService implements IComponentService {
    * Delay helper
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
@@ -118,25 +118,20 @@ export abstract class BaseService implements IComponentService {
     batchSize: number = 10
   ): Promise<R[]> {
     const results: R[] = [];
-    
+
     for (let i = 0; i < items.length; i += batchSize) {
       const batch = items.slice(i, i + batchSize);
-      const batchResults = await Promise.all(
-        batch.map(item => processor(item))
-      );
+      const batchResults = await Promise.all(batch.map((item) => processor(item)));
       results.push(...batchResults);
     }
-    
+
     return results;
   }
 
   /**
    * Validate input data
    */
-  protected validateInput<T>(
-    data: any,
-    validator: (data: any) => data is T
-  ): T {
+  protected validateInput<T>(data: any, validator: (data: any) => data is T): T {
     if (!validator(data)) {
       throw ApiError.badRequest('Invalid input data');
     }
@@ -146,11 +141,7 @@ export abstract class BaseService implements IComponentService {
   /**
    * Log and throw error
    */
-  protected throwError(
-    message: string,
-    statusCode: number = 500,
-    context?: any
-  ): never {
+  protected throwError(message: string, statusCode: number = 500, context?: any): never {
     const error = new ApiError(statusCode, message, true, context);
     this.logger.error({ err: error, context }, message);
     throw error;

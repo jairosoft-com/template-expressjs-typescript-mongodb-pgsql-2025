@@ -29,7 +29,7 @@ export const mockUserRepository = {
       id,
       ...userData,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
     users.set(id, user);
     const { password, ...publicData } = user;
@@ -46,10 +46,10 @@ export const mockUserRepository = {
   async updateById(id: string, updateData: Partial<any>): Promise<UserPublicData | null> {
     const user = users.get(id);
     if (!user) return null;
-    
+
     Object.assign(user, updateData, { updatedAt: new Date() });
     users.set(id, user);
-    
+
     const { password, ...publicData } = user;
     return publicData;
   },
@@ -58,17 +58,20 @@ export const mockUserRepository = {
     return users.delete(id);
   },
 
-  async findAll(limit: number = 10, skip: number = 0): Promise<{ users: UserPublicData[]; total: number }> {
+  async findAll(
+    limit: number = 10,
+    skip: number = 0
+  ): Promise<{ users: UserPublicData[]; total: number }> {
     const allUsers = Array.from(users.values());
     const paginatedUsers = allUsers.slice(skip, skip + limit);
-    const publicUsers = paginatedUsers.map(user => {
+    const publicUsers = paginatedUsers.map((user) => {
       const { password, ...publicData } = user;
       return publicData;
     });
-    
+
     return {
       users: publicUsers,
-      total: allUsers.length
+      total: allUsers.length,
     };
-  }
+  },
 };

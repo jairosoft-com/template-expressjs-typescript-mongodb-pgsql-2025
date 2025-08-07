@@ -36,7 +36,7 @@ export abstract class BaseController implements IComponentController {
     return res.status(statusCode).json({
       status: 'success',
       message,
-      data
+      data,
     });
   }
 
@@ -56,28 +56,22 @@ export abstract class BaseController implements IComponentController {
     return res.status(200).json({
       status: 'success',
       data,
-      pagination
+      pagination,
     });
   }
 
   /**
    * Common error response handler
    */
-  protected sendError(
-    res: Response,
-    error: ApiError | Error,
-    statusCode?: number
-  ): Response {
-    const code = error instanceof ApiError 
-      ? error.statusCode 
-      : statusCode || 500;
-    
+  protected sendError(res: Response, error: ApiError | Error, statusCode?: number): Response {
+    const code = error instanceof ApiError ? error.statusCode : statusCode || 500;
+
     const message = error.message || 'An error occurred';
-    
+
     return res.status(code).json({
       status: 'error',
       message,
-      statusCode: code
+      statusCode: code,
     });
   }
 
@@ -95,16 +89,11 @@ export abstract class BaseController implements IComponentController {
   /**
    * Validate required fields in request body
    */
-  protected validateRequiredFields(
-    body: any,
-    requiredFields: string[]
-  ): void {
-    const missingFields = requiredFields.filter(field => !body[field]);
-    
+  protected validateRequiredFields(body: any, requiredFields: string[]): void {
+    const missingFields = requiredFields.filter((field) => !body[field]);
+
     if (missingFields.length > 0) {
-      throw ApiError.badRequest(
-        `Missing required fields: ${missingFields.join(', ')}`
-      );
+      throw ApiError.badRequest(`Missing required fields: ${missingFields.join(', ')}`);
     }
   }
 
@@ -119,7 +108,7 @@ export abstract class BaseController implements IComponentController {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 10));
     const skip = (page - 1) * limit;
-    
+
     return { page, limit, skip };
   }
 
@@ -129,11 +118,11 @@ export abstract class BaseController implements IComponentController {
   protected parseSort(req: Request, allowedFields: string[]): any {
     const sortField = req.query.sortBy as string;
     const sortOrder = req.query.sortOrder as string;
-    
+
     if (!sortField || !allowedFields.includes(sortField)) {
       return {};
     }
-    
+
     return { [sortField]: sortOrder === 'desc' ? -1 : 1 };
   }
 }

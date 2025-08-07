@@ -14,7 +14,7 @@ class HealthComponent extends BaseComponent {
       description: 'Health check and monitoring endpoints',
       enabled: true,
       dependencies: [],
-      tags: ['monitoring', 'health', 'status']
+      tags: ['monitoring', 'health', 'status'],
     };
 
     super(metadata);
@@ -33,7 +33,7 @@ class HealthComponent extends BaseComponent {
    */
   public async initialize(): Promise<void> {
     await super.initialize();
-    
+
     // Health component doesn't need special initialization
     this.logger.info('Health component ready');
   }
@@ -43,7 +43,7 @@ class HealthComponent extends BaseComponent {
    */
   public async shutdown(): Promise<void> {
     await super.shutdown();
-    
+
     // Health component doesn't need special cleanup
     this.logger.info('Health component shutdown complete');
   }

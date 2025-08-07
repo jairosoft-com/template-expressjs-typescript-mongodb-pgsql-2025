@@ -4,12 +4,7 @@ import { ApiError } from '@common/utils/ApiError';
 import { createChildLogger } from '@common/utils/logger';
 import config from '@/config';
 
-export const errorMiddleware = (
-  error: Error,
-  req: Request,
-  res: Response,
-  _next: NextFunction
-) => {
+export const errorMiddleware = (error: Error, req: Request, res: Response, _next: NextFunction) => {
   let statusCode = 500;
   let message = 'An unexpected error occurred';
 
@@ -29,17 +24,20 @@ export const errorMiddleware = (
 
   // Get child logger from request or create new one
   const childLogger = req.logger || createChildLogger(req.requestId || 'unknown');
-  
+
   // Log the error for debugging
-  childLogger.error({
-    err: error,
-    statusCode,
-    method: req?.method || 'unknown',
-    url: req?.originalUrl || 'unknown',
-    ip: req?.ip || 'unknown',
-    stack: config.nodeEnv === 'development' ? error.stack : undefined,
-    type: 'error-middleware'
-  }, `${statusCode} - ${message}`);
+  childLogger.error(
+    {
+      err: error,
+      statusCode,
+      method: req?.method || 'unknown',
+      url: req?.originalUrl || 'unknown',
+      ip: req?.ip || 'unknown',
+      stack: config.nodeEnv === 'development' ? error.stack : undefined,
+      type: 'error-middleware',
+    },
+    `${statusCode} - ${message}`
+  );
 
   // In production, don't send detailed error messages to the client
   if (config.nodeEnv === 'production' && statusCode === 500) {

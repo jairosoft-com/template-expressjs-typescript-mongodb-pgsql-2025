@@ -7,13 +7,20 @@ import { ApiError } from '@common/utils/ApiError';
 export type UserWithoutPassword = Omit<User, 'password'>;
 export type UserCreateInput = Omit<Prisma.UserCreateInput, 'id' | 'createdAt' | 'updatedAt'>;
 export type UserUpdateInput = Partial<UserCreateInput>;
-export type UserPublicData = Pick<User, 'id' | 'email' | 'firstName' | 'lastName' | 'avatar' | 'emailVerified'>;
+export type UserPublicData = Pick<
+  User,
+  'id' | 'email' | 'firstName' | 'lastName' | 'avatar' | 'emailVerified'
+>;
 
 /**
  * User Repository using Prisma
  * Handles all database operations for users
  */
-export class UserRepository extends BaseRepository<User, Prisma.UserCreateInput, Prisma.UserUpdateInput> {
+export class UserRepository extends BaseRepository<
+  User,
+  Prisma.UserCreateInput,
+  Prisma.UserUpdateInput
+> {
   constructor() {
     super('user');
   }
@@ -46,7 +53,10 @@ export class UserRepository extends BaseRepository<User, Prisma.UserCreateInput,
       });
       return user;
     } catch (error) {
-      this.logger.error({ err: error, provider, providerId }, 'Error finding user by OAuth provider');
+      this.logger.error(
+        { err: error, provider, providerId },
+        'Error finding user by OAuth provider'
+      );
       throw error;
     }
   }
@@ -159,9 +169,10 @@ export class UserRepository extends BaseRepository<User, Prisma.UserCreateInput,
       if (!user) return;
 
       const attempts = user.loginAttempts + 1;
-      const lockUntil = attempts >= 5 
-        ? new Date(Date.now() + 2 * 60 * 60 * 1000) // Lock for 2 hours
-        : null;
+      const lockUntil =
+        attempts >= 5
+          ? new Date(Date.now() + 2 * 60 * 60 * 1000) // Lock for 2 hours
+          : null;
 
       await this.prisma.user.update({
         where: { id: user.id },
@@ -243,7 +254,7 @@ export class UserRepository extends BaseRepository<User, Prisma.UserCreateInput,
   async addBackupCodes(userId: string, codes: string[]): Promise<void> {
     try {
       await this.prisma.backupCode.createMany({
-        data: codes.map(code => ({
+        data: codes.map((code) => ({
           userId,
           code,
         })),
