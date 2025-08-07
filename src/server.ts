@@ -9,8 +9,8 @@ import { connectMongo, closeMongo } from '@/database/mongo';
 import { connectRedis, closeRedis } from '@/database/redis';
 import { errorMiddleware } from '@common/middleware/error.middleware';
 import { ApiError } from '@common/utils/ApiError';
-import userRouter from '@components/users/users.routes';
-import healthRouter from '@components/health/health.routes';
+import { componentRegistry } from '@common/core/ComponentRegistry';
+import { join } from 'path';
 import { setupSwagger } from '@/config/swagger';
 import { requestLogger, responseLogger, errorLogger, performanceMonitor } from '@common/middleware/logging.middleware';
 
@@ -115,9 +115,7 @@ app.get('/', (_req: Request, res: Response) => {
 app.use('/api/v1/users/login', authLimiter);
 app.use('/api/v1/users/register', authLimiter);
 
-// API Routes
-app.use('/api/v1/users', userRouter);
-app.use('/api/v1/health', healthRouter);
+// Component auto-discovery and route mounting will happen in startServer
 
 // Phase 5: API Gateway routing
 app.use('/api/v1/gateway', (req: Request, res: Response, next: NextFunction) => {
@@ -144,6 +142,18 @@ const startServer = async () => {
     } else {
       logger.info('Skipping database connections (SKIP_DB_CONNECTION=true)');
     }
+
+    // Auto-discover and register components
+    logger.info('Discovering components...');
+    const componentsPath = join(__dirname, 'components');
+    await componentRegistry.autoDiscover(componentsPath);
+    
+    // Initialize all components
+    await componentRegistry.initializeAll();
+    
+    // Mount component routes
+    componentRegistry.mountRoutes(app);
+    logger.info(`Mounted ${componentRegistry.getStats().total} components`);
 
     // Phase 5: Initialize services
     logger.info('Initializing Phase 5 services...');
@@ -202,6 +212,13 @@ const startServer = async () => {
       // Stop accepting new requests
       server.close(async () => {
         logger.info('HTTP server closed');
+        
+        // Shutdown all components
+        try {
+          await componentRegistry.shutdownAll();
+        } catch (error) {
+          logger.error('Error shutting down components:', error);
+        }
         
         // Close database connections
         try {
