@@ -89,6 +89,10 @@ The following diagram illustrates the complete directory and file structure of t
 ├── README.md             \# Project documentation and AI instructions  
 ├── tsconfig.json         \# TypeScript compiler configuration  
 │  
+├── prisma/               \# Prisma schema and migrations  
+│   ├── schema.prisma     \# Single source of truth for database schema  
+│   └── migrations/       \# Auto-generated SQL migration files  
+│  
 ├── dist/                 \# Compiled JavaScript output from TypeScript  
 │  
 └── src/                  \# Application source code  
@@ -112,9 +116,8 @@ The following diagram illustrates the complete directory and file structure of t
     │   ├── users/        \# Example: 'users' component  
     │   │   ├── index.ts              \# Public API of the component (exports router)  
     │   │   ├── users.controller.ts   \# Handles HTTP requests and responses  
-    │   │   ├── users.model.ts        \# Data schema and database interaction  
     │   │   ├── users.routes.ts       \# Defines API endpoints for the component  
-    │   │   ├── users.service.ts      \# Contains core business logic  
+    │   │   ├── users.service.ts      \# Contains core business logic (uses Prisma Client)  
     │   │   ├── users.test.ts         \# Unit and integration tests for the component  
     │   │   └── users.validation.ts   \# Data validation schemas  
     │   │  
@@ -124,7 +127,8 @@ The following diagram illustrates the complete directory and file structure of t
     │       ├──... (etc.)  
     │  
     └── config/           \# Environment-aware configuration loading  
-        └── index.ts      \# Loads and validates config from environment variables
+        ├── index.ts      \# Loads and validates config from environment variables  
+        └── prisma.ts     \# Prisma Client configuration and instance
 
 ### **2.3 Root-Level Configuration**
 
@@ -160,6 +164,8 @@ The following table summarizes the core dependencies recommended for this templa
 | `jest` & `supertest` | Testing framework and HTTP assertion library. | Jest provides an integrated "all-in-one" testing solution. Supertest allows for easy testing of HTTP endpoints without a live server, ideal for API contract testing. |
 | `standard` | JavaScript style guide, linter, and formatter. | Recommended for its "zero-configuration" approach, which simplifies setup and enforces a highly consistent, predictable style. This predictability is extremely beneficial for AI-assisted development. |
 | `opossum` | Circuit breaker implementation for fault tolerance. | A mature and widely-used Node.js module for implementing the circuit breaker pattern, essential for building resilient microservices that communicate over the network. |
+| `@prisma/client` | Type-safe database client with auto-generated types. | Provides a modern, type-safe database client that generates TypeScript types from the Prisma schema, ensuring compile-time safety for all database operations. |
+| `prisma` | Database toolkit and ORM for Node.js and TypeScript. | Offers a declarative schema definition, automatic migration generation, and excellent developer experience with IntelliSense support. |
 
 ### **2.4 The `/src` Directory: Core Application Logic**
 
@@ -183,6 +189,11 @@ To comply with the Twelve-Factor App principles, configuration must be strictly 
   * It uses `dotenv` to load the `.env` file during local development. This call should be one of the first lines of code executed.  
   * It reads all required configuration values from `process.env`.  
   * Crucially, it validates the presence and, where applicable, the format of essential environment variables. If a required variable (like `DATABASE_URL` or `JWT_SECRET`) is missing, the application should throw an error and refuse to start. This "fail-fast" approach prevents obscure runtime errors caused by a misconfigured environment.
+
+* **`config/prisma.ts`:** This file manages the Prisma Client instance, which is the primary interface for database operations.  
+  * It creates and exports a single, shared Prisma Client instance to ensure efficient connection management.  
+  * It configures logging options for development and production environments.  
+  * It handles graceful shutdown by properly disconnecting the client when the application terminates.
 
 TypeScript  
 // src/config/index.ts  
@@ -211,6 +222,17 @@ if (\!config.database.url ||\!config.jwt.secret) {
 }
 
 export default Object.freeze(config); // Freeze the object to prevent modification  
+
+// src/config/prisma.ts  
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient({
+  log: process.env.NODE_ENV === 'development' 
+    ? ['query', 'info', 'warn', 'error'] 
+    : ['error'],
+});
+
+export default prisma;
 \`\`\`
 
 ### **2.6 The `/components` Directory: The Heart of the Service**
@@ -224,11 +246,12 @@ A typical component, for example `/components/users`, will have the following in
   1. Parsing the incoming request (`req.body`, `req.params`, `req.query`).  
   2. Calling the appropriate method on the `users.service`.  
   3. Formatting the response and sending it back to the client with the correct HTTP status code. It should contain no business logic itself.  
-* `users.service.ts`: Contains the core business logic for the user component. It orchestrates data access by interacting with the model and performs any complex operations or calculations. This is where the actual "work" of the component is done.  
-* `users.model.ts`: Defines the data schema or model for the user entity. This would typically be a Mongoose schema, a Sequelize model, or a similar data structure definition depending on the chosen ORM/ODM.  
+* `users.service.ts`: Contains the core business logic for the user component. It orchestrates data access by interacting with the Prisma Client and performs any complex operations or calculations. This is where the actual "work" of the component is done. The service imports auto-generated types from `@prisma/client` for type-safe database operations.  
 * `users.validation.ts`: (Optional but highly recommended) Defines schemas for validating incoming data, such as request bodies for creating or updating a user. Libraries like `Joi` or `class-validator` are used here to ensure data integrity before it reaches the service layer.  
 * `users.test.ts`: Contains all unit and integration tests related to the user component. Co-locating tests with the code they cover makes them easier to find and maintain.  
 * `index.ts`: Serves as the public API for the component. At a minimum, it exports the component's router so it can be mounted by the main `app.ts`. It may also export the service if other components need to interact with it directly.
+
+**Note:** With Prisma integration, the `users.model.ts` file is no longer needed as the data schema is centrally defined in `/prisma/schema.prisma`. The Prisma Client provides type-safe database operations directly in the service layer.
 
 ### **2.7 The `/common` Directory: Shared Middleware, Utilities, and Types**
 
@@ -245,7 +268,123 @@ To promote code reuse and adhere to the Don't Repeat Yourself (DRY) principle, a
   * `password.ts`: Utility functions for hashing and comparing passwords with `bcrypt`.  
 * `/types`: This subdirectory contains shared TypeScript type definitions, interfaces, or enums that are used by multiple components or throughout the application.
 
-### **2.8 Application Entry Points: `app.ts` and `server.ts`**
+### **2.8 Prisma Integration: The Single Source of Truth for Data**
+
+This template integrates **Prisma** as the primary ORM, providing a modern, type-safe approach to database management that is particularly well-suited for AI-assisted development. Prisma's declarative schema definition serves as the single source of truth for all data models, making the codebase more predictable and easier to understand for both human developers and AI tools.
+
+#### **2.8.1 The Prisma Schema: Centralized Data Definition**
+
+The `/prisma/schema.prisma` file is the cornerstone of the data layer. It defines all database models, relationships, and configurations in a declarative, human-readable format that is also easily parsable by AI tools.
+
+```prisma
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relationships
+  orders    Order[]
+  
+  @@map("users")
+}
+
+model Order {
+  id        String   @id @default(cuid())
+  userId    String
+  total     Decimal
+  status    OrderStatus
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relationships
+  user      User     @relation(fields: [userId], references: [id])
+  
+  @@map("orders")
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+```
+
+#### **2.8.2 Type-Safe Database Operations**
+
+The Prisma Client provides auto-generated TypeScript types that ensure compile-time safety for all database operations. This eliminates runtime errors and provides excellent IntelliSense support.
+
+```typescript
+// src/components/users/users.service.ts
+import prisma from '../../config/prisma';
+import { User, Prisma } from '@prisma/client';
+
+export const createUser = async (data: Prisma.UserCreateInput): Promise<User> => {
+  return await prisma.user.create({ data });
+};
+
+export const findUserById = async (id: string): Promise<User | null> => {
+  return await prisma.user.findUnique({ 
+    where: { id },
+    include: { orders: true }
+  });
+};
+
+export const updateUser = async (
+  id: string, 
+  data: Prisma.UserUpdateInput
+): Promise<User> => {
+  return await prisma.user.update({
+    where: { id },
+    data
+  });
+};
+
+export const deleteUser = async (id: string): Promise<User> => {
+  return await prisma.user.delete({
+    where: { id }
+  });
+};
+```
+
+#### **2.8.3 Migration Management**
+
+Prisma automatically generates SQL migration files based on schema changes, ensuring version-controlled database evolution.
+
+```bash
+# Generate a new migration
+npx prisma migrate dev --name add_user_fields
+
+# Apply migrations in production
+npx prisma migrate deploy
+
+# Reset database (development only)
+npx prisma migrate reset
+```
+
+#### **2.8.4 Benefits for AI-Assisted Development**
+
+* **Declarative Schema:** The Prisma schema is self-documenting and easily parsable by AI tools, providing clear context about data structures and relationships.
+* **Auto-Generated Types:** TypeScript types are automatically generated from the schema, ensuring consistency between the database and application code.
+* **Predictable Patterns:** Prisma Client operations follow consistent patterns that AI tools can reliably generate and understand.
+* **Migration Safety:** Automatic migration generation reduces the risk of schema drift and ensures database changes are tracked in version control.
+
+### **2.9 Application Entry Points: `app.ts` and `server.ts`**
 
 These two files work in tandem to bootstrap and run the application.
 
@@ -257,9 +396,9 @@ These two files work in tandem to bootstrap and run the application.
   5. Finally, it exports the fully configured `app` instance.  
 * **`server.ts`:** This is the executable entry point of the microservice.  
   1. It imports the `app` instance from `app.ts` and the `config` object from `/config`.  
-  2. It establishes connections to backing services, such as the database.  
+  2. It establishes connections to backing services, such as the database via Prisma Client.  
   3. It starts the HTTP server by calling `app.listen(config.port,...)`.  
-  4. It implements graceful shutdown logic. It listens for system signals like `SIGTERM` (sent by container orchestrators) and `SIGINT` (from Ctrl+C). Upon receiving a signal, it stops accepting new requests, waits for existing requests to finish, closes the database connection, and then exits the process cleanly. This is a non-negotiable feature for robust, containerized applications.
+  4. It implements graceful shutdown logic. It listens for system signals like `SIGTERM` (sent by container orchestrators) and `SIGINT` (from Ctrl+C). Upon receiving a signal, it stops accepting new requests, waits for existing requests to finish, closes the Prisma Client connection, and then exits the process cleanly. This is a non-negotiable feature for robust, containerized applications.
 
 ## **Section 3: Engineering for Production-Grade Quality**
 
@@ -382,10 +521,11 @@ The `Dockerfile` in this template is structured in two distinct stages:
    * **Base Image:** This stage starts from a full, official `node` image (e.g., `node:lts`) which contains the complete Node.js runtime, npm, and other build tools.  
    * **Dependency Installation:** It first copies only the `package.json` and `package-lock.json` files. Then, it runs `npm ci --omit=dev` to install only the production dependencies. By copying the package files separately from the source code, Docker's layer caching is used effectively. The dependency layer will only be rebuilt if the package files change, not every time the source code changes.  
    * **Code Compilation:** After installing dependencies, it copies the rest of the application's source code and runs the TypeScript compiler (`npm run build`) to transpile the TypeScript code into plain JavaScript, placing the output in a `/dist` directory.  
+   * **Prisma Client Generation:** It runs `npx prisma generate` to generate the Prisma Client based on the schema, ensuring the production image includes the latest database types.  
 2. **The `production` Stage:**  
    * **Base Image:** This stage starts from a new, minimal base image, such as `node:lts-alpine`. The Alpine Linux-based image is significantly smaller than the full Node.js image, containing only the bare essentials needed to run the application.  
    * **Security:** It creates a dedicated, non-root user and group to run the application. Running as a non-root user is a critical security best practice that follows the principle of least privilege.  
-   * **Artifact Copying:** It uses the `COPY --from=builder` instruction to selectively copy only the necessary artifacts from the `builder` stage: the `/dist` directory (containing the compiled JavaScript) and the `/node_modules` directory (containing the production dependencies).  
+   * **Artifact Copying:** It uses the `COPY --from=builder` instruction to selectively copy only the necessary artifacts from the `builder` stage: the `/dist` directory (containing the compiled JavaScript), the `/node_modules` directory (containing the production dependencies), and the generated Prisma Client.  
    * **Execution:** It sets the `NODE_ENV` environment variable to `production` and defines the `CMD` to run the application using `node dist/server.js`.
 
 This multi-stage approach ensures that the final production image is lean and secure. It contains no source code, no TypeScript compiler, no development dependencies, and no unnecessary build tools, dramatically reducing its size and potential vulnerabilities.
@@ -464,7 +604,8 @@ This microservice is responsible for managing user profiles, authentication, and
 This project adheres to a set of strict architectural principles to ensure consistency, maintainability, and scalability.
 
 * **Twelve-Factor App:** This service follows the(). All configuration is provided via environment variables, and logs are treated as event streams to `stdout`.  
-* **Component-Driven Architecture:** The codebase is organized by business feature, not by technical layer. All source code for a specific feature (e.g., users, products) is co-located in a directory under `/src/components`. Each component directory contains its own routes, controllers, services, models, and tests.  
+* **Component-Driven Architecture:** The codebase is organized by business feature, not by technical layer. All source code for a specific feature (e.g., users, products) is co-located in a directory under `/src/components`. Each component directory contains its own routes, controllers, services, and tests.  
+* **Prisma as Single Source of Truth:** All database models and relationships are defined in `/prisma/schema.prisma`, providing a centralized, declarative data definition that is easily parsable by AI tools and human developers alike.  
 * **Code Style:** This project uses() for all TypeScript code. All code is automatically formatted on commit.
 
 **Annotation:** This is the "system prompt" for the AI. It explicitly states the core rules of the codebase. An AI assistant reading this will understand that new features must be created as components and that all configuration must come from the environment.
@@ -531,7 +672,211 @@ This project is licensed under the MIT License. See the(./LICENSE) file for deta
 
 ---
 
-## **Section 7: Recommendations for Organizational Adoption and Extension**
+## **Section 7: Prisma Development Workflow and Best Practices**
+
+This section provides comprehensive guidance on working with Prisma in the context of the AI-friendly microservice template, including development workflows, testing strategies, and production deployment considerations.
+
+### **7.1 Prisma Development Workflow**
+
+#### **7.1.1 Initial Setup**
+```bash
+# Install Prisma CLI and client
+npm install prisma @prisma/client
+npm install --save-dev prisma
+
+# Initialize Prisma (creates prisma/ directory and schema.prisma)
+npx prisma init
+
+# Generate Prisma Client after schema changes
+npx prisma generate
+```
+
+#### **7.1.2 Schema Development**
+```bash
+# Start Prisma Studio for visual database management
+npx prisma studio
+
+# Format the schema file
+npx prisma format
+
+# Validate the schema
+npx prisma validate
+```
+
+#### **7.1.3 Database Migrations**
+```bash
+# Create and apply a new migration
+npx prisma migrate dev --name descriptive_name
+
+# Apply pending migrations in production
+npx prisma migrate deploy
+
+# Reset database (development only)
+npx prisma migrate reset
+
+# View migration history
+npx prisma migrate status
+```
+
+### **7.2 Testing with Prisma**
+
+#### **7.2.1 Test Database Setup**
+```typescript
+// tests/setup.ts
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+beforeAll(async () => {
+  // Use test database URL
+  process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test_db';
+  
+  // Clean database before tests
+  await prisma.$executeRaw`TRUNCATE TABLE users CASCADE`;
+});
+
+afterAll(async () => {
+  await prisma.$disconnect();
+});
+```
+
+#### **7.2.2 Component Testing with Prisma**
+```typescript
+// src/components/users/users.test.ts
+import prisma from '../../config/prisma';
+import { createUser, findUserById } from './users.service';
+
+describe('User Service', () => {
+  beforeEach(async () => {
+    await prisma.user.deleteMany();
+  });
+
+  it('should create a user', async () => {
+    const userData = {
+      email: 'test@example.com',
+      password: 'hashedPassword',
+      firstName: 'John',
+      lastName: 'Doe'
+    };
+
+    const user = await createUser(userData);
+    
+    expect(user.email).toBe(userData.email);
+    expect(user.firstName).toBe(userData.firstName);
+  });
+});
+```
+
+### **7.3 Production Deployment Considerations**
+
+#### **7.3.1 Migration Strategy**
+```dockerfile
+# Dockerfile
+FROM node:lts-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev
+COPY . .
+RUN npm run build
+RUN npx prisma generate
+
+FROM node:lts-alpine AS production
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/prisma ./prisma
+
+# Apply migrations on startup
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
+```
+
+#### **7.3.2 Environment Configuration**
+```env
+# .env.example
+DATABASE_URL="postgresql://user:password@localhost:5432/mydb?schema=public"
+NODE_ENV="production"
+```
+
+### **7.4 AI-Friendly Prisma Patterns**
+
+#### **7.4.1 Consistent Service Patterns**
+```typescript
+// Standard CRUD operations pattern
+export class UserService {
+  async create(data: Prisma.UserCreateInput): Promise<User> {
+    return await prisma.user.create({ data });
+  }
+
+  async findById(id: string): Promise<User | null> {
+    return await prisma.user.findUnique({ where: { id } });
+  }
+
+  async update(id: string, data: Prisma.UserUpdateInput): Promise<User> {
+    return await prisma.user.update({ where: { id }, data });
+  }
+
+  async delete(id: string): Promise<User> {
+    return await prisma.user.delete({ where: { id } });
+  }
+
+  async findMany(params: Prisma.UserFindManyArgs): Promise<User[]> {
+    return await prisma.user.findMany(params);
+  }
+}
+```
+
+#### **7.4.2 Type-Safe Query Building**
+```typescript
+// Leverage Prisma's type system for complex queries
+export const findUsersWithOrders = async (): Promise<User[]> => {
+  return await prisma.user.findMany({
+    include: {
+      orders: {
+        where: {
+          status: 'CONFIRMED'
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      }
+    },
+    where: {
+      email: {
+        contains: '@example.com'
+      }
+    }
+  });
+};
+```
+
+### **7.5 Schema Evolution Best Practices**
+
+#### **7.5.1 Backward-Compatible Changes**
+```prisma
+// Add optional fields to avoid breaking existing data
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  // New optional field
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+```
+
+#### **7.5.2 Migration Naming Conventions**
+```bash
+# Use descriptive names for migrations
+npx prisma migrate dev --name add_user_phone_field
+npx prisma migrate dev --name create_order_status_enum
+npx prisma migrate dev --name add_user_order_relationship
+```
+
+## **Section 8: Recommendations for Organizational Adoption and Extension**
 
 This project template provides a robust foundation for developing individual microservices. However, its true value is realized when adopted as a standard across an organization. This final section provides strategic recommendations for rolling out the template and discusses advanced topics that arise when moving from a single service to a complete, interconnected microservice ecosystem.
 
