@@ -283,7 +283,7 @@ class TwoFactorService {
       }
 
       return decoded;
-    } catch (error) {
+    } catch {
       throw new Error('Invalid 2FA token');
     }
   }
