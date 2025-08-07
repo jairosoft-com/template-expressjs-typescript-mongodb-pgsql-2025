@@ -1,7 +1,6 @@
 import pino from 'pino';
 
-// Determine if we're in production
-const isProduction = process.env.NODE_ENV === 'production';
+// Determine environment
 const isDevelopment = process.env.NODE_ENV === 'development';
 
 // Configure sensitive data redaction paths
@@ -53,7 +52,7 @@ const loggerOptions: pino.LoggerOptions = {
 };
 
 // Configure pretty printing for development
-if (isDevelopment && !isProduction) {
+if (isDevelopment) {
   loggerOptions.transport = {
     target: 'pino-pretty',
     options: {

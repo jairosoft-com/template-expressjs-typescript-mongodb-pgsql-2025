@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'crypto';
-import logger, { createChildLogger } from '@common/utils/logger';
+import { createChildLogger } from '@common/utils/logger';
 
 interface RequestLog {
   method: string;
@@ -38,15 +38,7 @@ interface ErrorLog {
   responseTime: number;
 }
 
-// Extend Express Request interface to include requestId
-declare global {
-  namespace Express {
-    interface Request {
-      requestId: string;
-      startTime: number;
-    }
-  }
-}
+// Request interface extensions are defined in src/common/types/express/index.d.ts
 
 /**
  * Generate a unique request ID using UUID v4
@@ -103,7 +95,7 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction) =
   const childLogger = createChildLogger(req.requestId);
   
   // Attach logger to request for use in routes
-  (req as any).logger = childLogger;
+  req.logger = childLogger;
   
   // Extract user ID if available
   const userId = extractUserId(req);
@@ -139,7 +131,7 @@ export const responseLogger = (req: Request, res: Response, next: NextFunction) 
   const userId = extractUserId(req);
   
   // Get child logger from request or create new one
-  const childLogger = (req as any).logger || createChildLogger(req.requestId);
+  const childLogger = req.logger || createChildLogger(req.requestId);
   
   res.send = function(body) {
     const responseTime = Date.now() - req.startTime;
@@ -181,7 +173,7 @@ export const errorLogger = (error: Error, req: Request, res: Response, next: Nex
   const userId = extractUserId(req);
   
   // Get child logger from request or create new one
-  const childLogger = (req as any).logger || createChildLogger(req.requestId);
+  const childLogger = req.logger || createChildLogger(req.requestId);
   
   // Create error log
   const errorLog: ErrorLog = {
@@ -213,7 +205,7 @@ export const performanceMonitor = (req: Request, res: Response, next: NextFuncti
   const startTime = process.hrtime();
   
   // Get child logger from request or create new one
-  const childLogger = (req as any).logger || createChildLogger(req.requestId);
+  const childLogger = req.logger || createChildLogger(req.requestId);
   
   res.on('finish', () => {
     const [seconds, nanoseconds] = process.hrtime(startTime);

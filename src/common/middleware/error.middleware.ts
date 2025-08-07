@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { ApiError } from '@common/utils/ApiError';
-import logger, { createChildLogger } from '@common/utils/logger';
+import { createChildLogger } from '@common/utils/logger';
 import config from '@/config';
 
 export const errorMiddleware = (
@@ -28,7 +28,7 @@ export const errorMiddleware = (
   }
 
   // Get child logger from request or create new one
-  const childLogger = (req as any)?.logger || createChildLogger((req as any)?.requestId || 'unknown');
+  const childLogger = req.logger || createChildLogger(req.requestId || 'unknown');
   
   // Log the error for debugging
   childLogger.error({
