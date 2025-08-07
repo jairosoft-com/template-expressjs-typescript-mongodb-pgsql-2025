@@ -8,22 +8,17 @@ export class ApiError extends Error {
   public readonly isOperational: boolean;
   public readonly context?: any;
 
-  constructor(
-    statusCode: number,
-    message: string,
-    isOperational = true,
-    context?: any
-  ) {
+  constructor(statusCode: number, message: string, isOperational = true, context?: any) {
     super(message);
-    
+
     // Set the name property
     this.name = 'ApiError';
-    
+
     // Assign properties
     this.statusCode = statusCode;
     this.isOperational = isOperational;
     this.context = context;
-    
+
     // Capture stack trace
     Error.captureStackTrace(this, this.constructor);
   }
@@ -54,7 +49,7 @@ export class ApiError extends Error {
   /**
    * Static factory methods for common HTTP errors
    */
-  
+
   // Client errors (4xx)
   static badRequest(message: string, context?: any): ApiError {
     return new ApiError(400, message, true, context);

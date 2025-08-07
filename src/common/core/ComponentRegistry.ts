@@ -55,10 +55,10 @@ export class ComponentRegistry implements IComponentRegistry {
     }
 
     this.logger.info('Initializing all components...');
-    
+
     // Sort components by dependencies
     const sortedComponents = this.sortByDependencies();
-    
+
     // Initialize components in order
     for (const component of sortedComponents) {
       try {
@@ -67,10 +67,7 @@ export class ComponentRegistry implements IComponentRegistry {
         }
         this.logger.info(`Initialized component: ${component.name}`);
       } catch (error) {
-        this.logger.error(
-          { err: error },
-          `Failed to initialize component: ${component.name}`
-        );
+        this.logger.error({ err: error }, `Failed to initialize component: ${component.name}`);
         throw error;
       }
     }
@@ -84,10 +81,10 @@ export class ComponentRegistry implements IComponentRegistry {
    */
   public async shutdownAll(): Promise<void> {
     this.logger.info('Shutting down all components...');
-    
+
     // Shutdown in reverse order of initialization
     const sortedComponents = this.sortByDependencies().reverse();
-    
+
     for (const component of sortedComponents) {
       try {
         if (component.shutdown) {
@@ -95,10 +92,7 @@ export class ComponentRegistry implements IComponentRegistry {
         }
         this.logger.info(`Shutdown component: ${component.name}`);
       } catch (error) {
-        this.logger.error(
-          { err: error },
-          `Error shutting down component: ${component.name}`
-        );
+        this.logger.error({ err: error }, `Error shutting down component: ${component.name}`);
       }
     }
 
@@ -111,12 +105,10 @@ export class ComponentRegistry implements IComponentRegistry {
    */
   public mountRoutes(app: Express): void {
     this.logger.info('Mounting component routes...');
-    
+
     for (const component of this.components.values()) {
       app.use(component.basePath, component.router);
-      this.logger.info(
-        `Mounted ${component.name} at ${component.basePath}`
-      );
+      this.logger.info(`Mounted ${component.name} at ${component.basePath}`);
     }
   }
 
@@ -125,9 +117,9 @@ export class ComponentRegistry implements IComponentRegistry {
    */
   public async autoDiscover(componentsPath: string): Promise<void> {
     this.logger.info(`Auto-discovering components from: ${componentsPath}`);
-    
+
     try {
-      const directories = readdirSync(componentsPath).filter(item => {
+      const directories = readdirSync(componentsPath).filter((item) => {
         const itemPath = join(componentsPath, item);
         return statSync(itemPath).isDirectory();
       });
@@ -135,21 +127,19 @@ export class ComponentRegistry implements IComponentRegistry {
       for (const dir of directories) {
         const componentPath = join(componentsPath, dir);
         const indexPath = join(componentPath, 'index.ts');
-        
+
         try {
           // Check if index.ts exists
           statSync(indexPath);
         } catch (error) {
-          this.logger.debug(
-            `Skipping ${dir}: No index.ts file found in component directory`
-          );
+          this.logger.debug(`Skipping ${dir}: No index.ts file found in component directory`);
           continue;
         }
 
         try {
           // Try to import the component
           const module = await import(indexPath);
-          
+
           if (module.default && this.isValidComponent(module.default)) {
             const component = module.default as IComponent;
             this.register(component);
@@ -169,10 +159,7 @@ export class ComponentRegistry implements IComponentRegistry {
         }
       }
     } catch (error) {
-      this.logger.error(
-        { err: error },
-        'Error during component auto-discovery'
-      );
+      this.logger.error({ err: error }, 'Error during component auto-discovery');
     }
   }
 
@@ -206,7 +193,7 @@ export class ComponentRegistry implements IComponentRegistry {
 
       visiting.add(name);
       const component = this.components.get(name);
-      
+
       if (component) {
         // Visit dependencies first
         const dependencies = (component as any).getDependencies?.() || [];
@@ -217,7 +204,7 @@ export class ComponentRegistry implements IComponentRegistry {
         }
         sorted.push(component);
       }
-      
+
       visiting.delete(name);
       visited.add(name);
     };
@@ -245,11 +232,11 @@ export class ComponentRegistry implements IComponentRegistry {
     return {
       total: this.components.size,
       initialized: this.initialized,
-      components: Array.from(this.components.values()).map(c => ({
+      components: Array.from(this.components.values()).map((c) => ({
         name: c.name,
         version: c.version,
-        basePath: c.basePath
-      }))
+        basePath: c.basePath,
+      })),
     };
   }
 }

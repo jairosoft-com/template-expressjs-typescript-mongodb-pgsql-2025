@@ -64,17 +64,17 @@ class SocketService {
     this.io.use(async (socket, next) => {
       try {
         const token = socket.handshake.auth.token || socket.handshake.headers.authorization;
-        
+
         if (!token) {
           return next(new Error('Authentication token required'));
         }
 
         const cleanToken = token.replace('Bearer ', '');
         const decoded = jwt.verify(cleanToken, config.jwt.secret) as any;
-        
+
         socket.data.userId = decoded.userId;
         socket.data.email = decoded.email;
-        
+
         next();
       } catch (error) {
         logger.error('Socket authentication failed:', error);
@@ -176,7 +176,7 @@ class SocketService {
     if (user && user.socketId === socketId) {
       this.connectedUsers.delete(userId);
       logger.info(`User ${user.email} disconnected`);
-      
+
       // Broadcast user offline status
       this.broadcastUserStatus(userId, 'offline');
     }
@@ -190,7 +190,7 @@ class SocketService {
     if (user) {
       user.lastActivity = new Date();
       this.connectedUsers.set(userId, user);
-      
+
       // Broadcast activity to relevant users
       this.broadcastUserActivity(userId, data);
     }
@@ -201,7 +201,7 @@ class SocketService {
    */
   private handleCustomEvent(userId: string, data: any): void {
     logger.info(`Custom event from user ${userId}:`, data);
-    
+
     // Process custom event based on type
     switch (data.type) {
       case 'data_update':
@@ -260,7 +260,7 @@ class SocketService {
 
     // Send to connected user
     this.io?.to(`user:${userId}`).emit('notification', fullNotification);
-    
+
     logger.info(`Notification sent to user ${userId}: ${notification.title}`);
   }
 
@@ -269,8 +269,8 @@ class SocketService {
    */
   private sendPendingNotifications(userId: string): void {
     const userNotifications = this.notifications.get(userId) || [];
-    const unreadNotifications = userNotifications.filter(n => !n.read);
-    
+    const unreadNotifications = userNotifications.filter((n) => !n.read);
+
     if (unreadNotifications.length > 0) {
       this.io?.to(`user:${userId}`).emit('pending_notifications', unreadNotifications);
       logger.info(`Sent ${unreadNotifications.length} pending notifications to user ${userId}`);
@@ -282,8 +282,8 @@ class SocketService {
    */
   private markNotificationAsRead(userId: string, notificationId: string): void {
     const userNotifications = this.notifications.get(userId) || [];
-    const notification = userNotifications.find(n => n.id === notificationId);
-    
+    const notification = userNotifications.find((n) => n.id === notificationId);
+
     if (notification) {
       notification.read = true;
       logger.info(`Notification ${notificationId} marked as read by user ${userId}`);
@@ -349,10 +349,10 @@ class SocketService {
     };
 
     this.liveUpdates.push(liveUpdate);
-    
+
     // Broadcast to all connected users
     this.io?.emit('data_update', liveUpdate);
-    
+
     logger.info(`Data update broadcasted by user ${userId}`);
   }
 
@@ -362,7 +362,7 @@ class SocketService {
   private handleSystemInteraction(userId: string, data: any): void {
     // Process system interaction
     logger.info(`System interaction from user ${userId}:`, data);
-    
+
     // Send acknowledgment
     this.io?.to(`user:${userId}`).emit('system_interaction_ack', {
       success: true,

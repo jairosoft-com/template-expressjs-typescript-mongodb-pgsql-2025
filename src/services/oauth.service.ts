@@ -9,6 +9,7 @@ import logger from '@common/utils/logger';
 import config from '@/config';
 import { UserModel } from '../database/models/user.model';
 import { eventService } from './event.service';
+import { parseFullName } from '@common/utils/name.utils';
 
 interface OAuthProfile {
   id: string;
@@ -215,13 +216,12 @@ class OAuthService {
 
     if (!user) {
       // Create new user
-      const [firstName, ...lastNameParts] = (profile.displayName || '').split(' ');
-      const lastName = lastNameParts.join(' ') || '';
+      const { firstName, lastName } = parseFullName(profile.displayName);
 
       user = await UserModel.create({
         email,
-        firstName: firstName || 'User',
-        lastName: lastName || 'Name',
+        firstName,
+        lastName,
         password: await bcrypt.hash(Math.random().toString(36), 12), // Random password for OAuth users
         avatar: profile.photos?.[0]?.value,
         oauthProvider: provider,

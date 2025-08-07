@@ -12,11 +12,11 @@ export interface IUser extends Document {
   lastLogin?: Date;
   loginAttempts: number;
   lockUntil?: Date;
-  
+
   // OAuth fields
   oauthProvider?: string;
   oauthProviderId?: string;
-  
+
   // Two-factor authentication fields
   twoFactorEnabled: boolean;
   twoFactorSecret?: string;
@@ -25,11 +25,11 @@ export interface IUser extends Document {
     used: boolean;
     usedAt?: Date;
   }>;
-  
+
   // Timestamps
   createdAt: Date;
   updatedAt: Date;
-  
+
   // Methods
   comparePassword(candidatePassword: string): Promise<boolean>;
   incrementLoginAttempts(): Promise<void>;
@@ -49,7 +49,7 @@ const userSchema = new Schema<IUser>(
     },
     password: {
       type: String,
-      required: function(this: IUser) {
+      required: function (this: IUser) {
         // Password is required unless user is created via OAuth
         return !this.oauthProvider;
       },
@@ -89,7 +89,7 @@ const userSchema = new Schema<IUser>(
     lockUntil: {
       type: Date,
     },
-    
+
     // OAuth fields
     oauthProvider: {
       type: String,
@@ -98,7 +98,7 @@ const userSchema = new Schema<IUser>(
     oauthProviderId: {
       type: String,
     },
-    
+
     // Two-factor authentication fields
     twoFactorEnabled: {
       type: Boolean,
@@ -107,24 +107,26 @@ const userSchema = new Schema<IUser>(
     twoFactorSecret: {
       type: String,
     },
-    twoFactorBackupCodes: [{
-      code: {
-        type: String,
-        required: true,
+    twoFactorBackupCodes: [
+      {
+        code: {
+          type: String,
+          required: true,
+        },
+        used: {
+          type: Boolean,
+          default: false,
+        },
+        usedAt: {
+          type: Date,
+        },
       },
-      used: {
-        type: Boolean,
-        default: false,
-      },
-      usedAt: {
-        type: Date,
-      },
-    }],
+    ],
   },
   {
     timestamps: true,
     toJSON: {
-      transform: function(doc, ret) {
+      transform: function (doc, ret) {
         delete ret.password;
         delete ret.twoFactorSecret;
         delete ret.twoFactorBackupCodes;
@@ -142,9 +144,9 @@ userSchema.index({ oauthProvider: 1, oauthProviderId: 1 });
 userSchema.index({ 'twoFactorBackupCodes.used': 1 });
 
 // Pre-save middleware to hash password
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
-  
+
   try {
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
@@ -155,9 +157,9 @@ userSchema.pre('save', async function(next) {
 });
 
 // Pre-save middleware to hash backup codes
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function (next) {
   if (!this.isModified('twoFactorBackupCodes')) return next();
-  
+
   try {
     if (this.twoFactorBackupCodes) {
       for (const backupCode of this.twoFactorBackupCodes) {
@@ -174,12 +176,12 @@ userSchema.pre('save', async function(next) {
 });
 
 // Instance method to compare password
-userSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
+userSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
 // Instance method to increment login attempts
-userSchema.methods.incrementLoginAttempts = async function(): Promise<void> {
+userSchema.methods.incrementLoginAttempts = async function (): Promise<void> {
   // If we have a previous lock that has expired, restart at 1
   if (this.lockUntil && this.lockUntil < new Date()) {
     return this.updateOne({
@@ -187,54 +189,54 @@ userSchema.methods.incrementLoginAttempts = async function(): Promise<void> {
       $set: { loginAttempts: 1 },
     });
   }
-  
+
   const updates = { $inc: { loginAttempts: 1 } };
-  
+
   // Lock account after 5 failed attempts
   if (this.loginAttempts + 1 >= 5 && !this.isLocked()) {
     updates.$set = { lockUntil: new Date(Date.now() + 2 * 60 * 60 * 1000) }; // 2 hours
   }
-  
+
   return this.updateOne(updates);
 };
 
 // Instance method to reset login attempts
-userSchema.methods.resetLoginAttempts = async function(): Promise<void> {
+userSchema.methods.resetLoginAttempts = async function (): Promise<void> {
   return this.updateOne({
     $unset: { loginAttempts: 1, lockUntil: 1 },
   });
 };
 
 // Instance method to check if account is locked
-userSchema.methods.isLocked = function(): boolean {
+userSchema.methods.isLocked = function (): boolean {
   return !!(this.lockUntil && this.lockUntil > new Date());
 };
 
 // Static method to find by OAuth provider
-userSchema.statics.findByOAuthProvider = function(provider: string, providerId: string) {
+userSchema.statics.findByOAuthProvider = function (provider: string, providerId: string) {
   return this.findOne({ oauthProvider: provider, oauthProviderId: providerId });
 };
 
 // Static method to find by email
-userSchema.statics.findByEmail = function(email: string) {
+userSchema.statics.findByEmail = function (email: string) {
   return this.findOne({ email: email.toLowerCase() });
 };
 
 // Virtual for full name
-userSchema.virtual('fullName').get(function() {
+userSchema.virtual('fullName').get(function () {
   return `${this.firstName} ${this.lastName}`;
 });
 
 // Virtual for remaining backup codes
-userSchema.virtual('remainingBackupCodes').get(function() {
+userSchema.virtual('remainingBackupCodes').get(function () {
   if (!this.twoFactorBackupCodes) return 0;
-  return this.twoFactorBackupCodes.filter(code => !code.used).length;
+  return this.twoFactorBackupCodes.filter((code) => !code.used).length;
 });
 
 // Virtual for OAuth account info
-userSchema.virtual('oauthAccount').get(function() {
+userSchema.virtual('oauthAccount').get(function () {
   if (!this.oauthProvider) return null;
-  
+
   return {
     provider: this.oauthProvider,
     providerId: this.oauthProviderId,

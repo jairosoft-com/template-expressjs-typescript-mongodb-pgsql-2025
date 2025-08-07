@@ -6,19 +6,19 @@ import { Router } from 'express';
 export interface IComponent {
   /** Component name (e.g., 'users', 'health') */
   name: string;
-  
+
   /** Component version for API versioning */
   version: string;
-  
+
   /** Express router for the component */
   router: Router;
-  
+
   /** Base path for mounting the component (e.g., '/api/v1/users') */
   basePath: string;
-  
+
   /** Component initialization method */
   initialize?(): Promise<void>;
-  
+
   /** Component shutdown method for cleanup */
   shutdown?(): Promise<void>;
 }
@@ -29,19 +29,19 @@ export interface IComponent {
 export interface IComponentMetadata {
   /** Component name */
   name: string;
-  
+
   /** Component description */
   description?: string;
-  
+
   /** Component version */
   version: string;
-  
+
   /** Component dependencies on other components */
   dependencies?: string[];
-  
+
   /** Component tags for categorization */
   tags?: string[];
-  
+
   /** Whether the component is enabled */
   enabled?: boolean;
 }
@@ -60,7 +60,7 @@ export interface IComponentController {
 export interface IComponentService {
   /** Initialize service */
   initialize?(): Promise<void>;
-  
+
   /** Cleanup service resources */
   cleanup?(): Promise<void>;
 }
@@ -71,7 +71,7 @@ export interface IComponentService {
 export interface IComponentRepository {
   /** Initialize repository connections */
   initialize?(): Promise<void>;
-  
+
   /** Close repository connections */
   close?(): Promise<void>;
 }
@@ -82,16 +82,16 @@ export interface IComponentRepository {
 export interface IComponentStructure {
   /** Component metadata */
   metadata: IComponentMetadata;
-  
+
   /** Component router */
   router: Router;
-  
+
   /** Component controller */
   controller?: IComponentController;
-  
+
   /** Component service */
   service?: IComponentService;
-  
+
   /** Component repository */
   repository?: IComponentRepository;
 }
@@ -102,16 +102,16 @@ export interface IComponentStructure {
 export interface IComponentRegistry {
   /** Register a new component */
   register(component: IComponent): void;
-  
+
   /** Get a component by name */
   get(name: string): IComponent | undefined;
-  
+
   /** Get all registered components */
   getAll(): IComponent[];
-  
+
   /** Initialize all components */
   initializeAll(): Promise<void>;
-  
+
   /** Shutdown all components */
   shutdownAll(): Promise<void>;
 }

@@ -19,12 +19,6 @@ interface TwoFactorVerification {
   backupCode?: string;
 }
 
-interface BackupCode {
-  code: string;
-  used: boolean;
-  usedAt?: Date;
-}
-
 class TwoFactorService {
   private readonly issuer = 'Express Template';
   private readonly algorithm = 'sha1';
@@ -52,7 +46,7 @@ class TwoFactorService {
     // Store secret in user document
     await UserModel.findByIdAndUpdate(userId, {
       twoFactorSecret: secret.base32,
-      twoFactorBackupCodes: backupCodes.map(code => ({
+      twoFactorBackupCodes: backupCodes.map((code) => ({
         code: bcrypt.hashSync(code, 12),
         used: false,
       })),
@@ -95,12 +89,16 @@ class TwoFactorService {
 
     if (verified) {
       logger.info(`2FA token verified for user ${userId}`);
-      
+
       // Emit 2FA verification event
-      await eventService.emitEvent('user.2fa_verified', {
-        method: 'totp',
-        timestamp: new Date().toISOString(),
-      }, userId);
+      await eventService.emitEvent(
+        'user.2fa_verified',
+        {
+          method: 'totp',
+          timestamp: new Date().toISOString(),
+        },
+        userId
+      );
     }
 
     return verified;
@@ -111,10 +109,10 @@ class TwoFactorService {
    */
   private async verifyBackupCode(user: any, backupCode: string): Promise<boolean> {
     const backupCodes = user.twoFactorBackupCodes || [];
-    
+
     for (let i = 0; i < backupCodes.length; i++) {
       const storedCode = backupCodes[i];
-      
+
       if (!storedCode.used && bcrypt.compareSync(backupCode, storedCode.code)) {
         // Mark backup code as used
         storedCode.used = true;
@@ -122,12 +120,16 @@ class TwoFactorService {
         await user.save();
 
         logger.info(`Backup code used for user ${user.id}`);
-        
+
         // Emit 2FA verification event
-        await eventService.emitEvent('user.2fa_verified', {
-          method: 'backup_code',
-          timestamp: new Date().toISOString(),
-        }, user.id);
+        await eventService.emitEvent(
+          'user.2fa_verified',
+          {
+            method: 'backup_code',
+            timestamp: new Date().toISOString(),
+          },
+          user.id
+        );
 
         return true;
       }
@@ -141,7 +143,7 @@ class TwoFactorService {
    */
   async enableTwoFactor(userId: string, verification: TwoFactorVerification): Promise<void> {
     const isValid = await this.verifyToken(userId, verification);
-    
+
     if (!isValid) {
       throw new Error('Invalid 2FA token');
     }
@@ -151,11 +153,15 @@ class TwoFactorService {
     });
 
     logger.info(`2FA enabled for user ${userId}`);
-    
+
     // Emit 2FA enabled event
-    await eventService.emitEvent('user.2fa_enabled', {
-      timestamp: new Date().toISOString(),
-    }, userId);
+    await eventService.emitEvent(
+      'user.2fa_enabled',
+      {
+        timestamp: new Date().toISOString(),
+      },
+      userId
+    );
   }
 
   /**
@@ -163,7 +169,7 @@ class TwoFactorService {
    */
   async disableTwoFactor(userId: string, verification: TwoFactorVerification): Promise<void> {
     const isValid = await this.verifyToken(userId, verification);
-    
+
     if (!isValid) {
       throw new Error('Invalid 2FA token');
     }
@@ -175,19 +181,26 @@ class TwoFactorService {
     });
 
     logger.info(`2FA disabled for user ${userId}`);
-    
+
     // Emit 2FA disabled event
-    await eventService.emitEvent('user.2fa_disabled', {
-      timestamp: new Date().toISOString(),
-    }, userId);
+    await eventService.emitEvent(
+      'user.2fa_disabled',
+      {
+        timestamp: new Date().toISOString(),
+      },
+      userId
+    );
   }
 
   /**
    * Generate new backup codes
    */
-  async generateNewBackupCodes(userId: string, verification: TwoFactorVerification): Promise<string[]> {
+  async generateNewBackupCodes(
+    userId: string,
+    verification: TwoFactorVerification
+  ): Promise<string[]> {
     const isValid = await this.verifyToken(userId, verification);
-    
+
     if (!isValid) {
       throw new Error('Invalid 2FA token');
     }
@@ -195,18 +208,22 @@ class TwoFactorService {
     const backupCodes = this.generateBackupCodes();
 
     await UserModel.findByIdAndUpdate(userId, {
-      twoFactorBackupCodes: backupCodes.map(code => ({
+      twoFactorBackupCodes: backupCodes.map((code) => ({
         code: bcrypt.hashSync(code, 12),
         used: false,
       })),
     });
 
     logger.info(`New backup codes generated for user ${userId}`);
-    
+
     // Emit backup codes regenerated event
-    await eventService.emitEvent('user.2fa_backup_codes_regenerated', {
-      timestamp: new Date().toISOString(),
-    }, userId);
+    await eventService.emitEvent(
+      'user.2fa_backup_codes_regenerated',
+      {
+        timestamp: new Date().toISOString(),
+      },
+      userId
+    );
 
     return backupCodes;
   }
@@ -220,7 +237,7 @@ class TwoFactorService {
       return 0;
     }
 
-    return user.twoFactorBackupCodes.filter(code => !code.used).length;
+    return user.twoFactorBackupCodes.filter((code) => !code.used).length;
   }
 
   /**
@@ -228,7 +245,7 @@ class TwoFactorService {
    */
   private generateBackupCodes(count: number = 10): string[] {
     const codes: string[] = [];
-    
+
     for (let i = 0; i < count; i++) {
       // Generate 8-character alphanumeric code
       const code = crypto.randomBytes(4).toString('hex').toUpperCase();
@@ -260,7 +277,7 @@ class TwoFactorService {
   verifyTwoFactorToken(token: string): any {
     try {
       const decoded = jwt.verify(token, config.jwt.secret) as any;
-      
+
       if (decoded.type !== '2fa') {
         throw new Error('Invalid token type');
       }
@@ -284,7 +301,7 @@ class TwoFactorService {
    */
   async getTwoFactorStatus(userId: string): Promise<any> {
     const user = await UserModel.findById(userId);
-    
+
     if (!user) {
       throw new Error('User not found');
     }
@@ -292,7 +309,7 @@ class TwoFactorService {
     return {
       enabled: user.twoFactorEnabled || false,
       hasSecret: !!user.twoFactorSecret,
-      remainingBackupCodes: user.twoFactorBackupCodes?.filter(code => !code.used).length || 0,
+      remainingBackupCodes: user.twoFactorBackupCodes?.filter((code) => !code.used).length || 0,
       totalBackupCodes: user.twoFactorBackupCodes?.length || 0,
     };
   }
@@ -345,12 +362,12 @@ class TwoFactorService {
 
     for (const user of users) {
       const originalCount = user.twoFactorBackupCodes?.length || 0;
-      
+
       // Remove used backup codes older than 30 days
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      user.twoFactorBackupCodes = user.twoFactorBackupCodes?.filter(code => {
+      user.twoFactorBackupCodes = user.twoFactorBackupCodes?.filter((code) => {
         if (!code.used) return true;
         if (!code.usedAt) return false;
         return code.usedAt > thirtyDaysAgo;

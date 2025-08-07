@@ -14,12 +14,14 @@ interface SetupOptions {
 const checkNodeVersion = () => {
   const nodeVersion = process.version;
   const majorVersion = parseInt(nodeVersion.slice(1).split('.')[0]);
-  
+
   if (majorVersion < 18) {
-    logger.error(`Node.js version ${nodeVersion} is not supported. Please use Node.js 18 or higher.`);
+    logger.error(
+      `Node.js version ${nodeVersion} is not supported. Please use Node.js 18 or higher.`
+    );
     process.exit(1);
   }
-  
+
   logger.info(`Node.js version ${nodeVersion} is supported`);
 };
 
@@ -42,7 +44,7 @@ const checkPackageManager = () => {
 
 const installDependencies = (packageManager: string) => {
   logger.info('Installing dependencies...');
-  
+
   try {
     if (packageManager === 'yarn') {
       execSync('yarn install', { stdio: 'inherit' });
@@ -58,13 +60,13 @@ const installDependencies = (packageManager: string) => {
 
 const setupEnvironment = () => {
   logger.info('Setting up environment variables...');
-  
+
   const envExamplePath = path.join(process.cwd(), '.env.example');
   const envPath = path.join(process.cwd(), '.env');
-  
+
   if (!fs.existsSync(envExamplePath)) {
     logger.warn('.env.example file not found. Creating basic .env file...');
-    
+
     const basicEnvContent = `# Server Configuration
 PORT=4010
 NODE_ENV=development
@@ -89,7 +91,7 @@ CORS_ORIGIN=http://localhost:3000
 # Logging Configuration
 LOG_LEVEL=info
 `;
-    
+
     fs.writeFileSync(envPath, basicEnvContent);
     logger.info('Created .env file with basic configuration');
   } else if (!fs.existsSync(envPath)) {
@@ -103,28 +105,31 @@ LOG_LEVEL=info
 
 const setupDocker = () => {
   logger.info('Setting up Docker environment...');
-  
+
   try {
     // Check if Docker is running
     execSync('docker --version', { stdio: 'pipe' });
     logger.info('Docker is available');
-    
+
     // Check if docker-compose is available
     try {
       execSync('docker-compose --version', { stdio: 'pipe' });
       logger.info('docker-compose is available');
     } catch (error) {
-      logger.warn('docker-compose not found. Please install it if you want to use Docker services.');
+      logger.warn(
+        'docker-compose not found. Please install it if you want to use Docker services.'
+      );
     }
-    
   } catch (error) {
-    logger.warn('Docker not found. Please install Docker if you want to use containerized services.');
+    logger.warn(
+      'Docker not found. Please install Docker if you want to use containerized services.'
+    );
   }
 };
 
 const runTests = () => {
   logger.info('Running tests...');
-  
+
   try {
     execSync('npm test', { stdio: 'inherit' });
     logger.info('All tests passed');
@@ -136,7 +141,7 @@ const runTests = () => {
 
 const seedDatabase = () => {
   logger.info('Seeding database...');
-  
+
   try {
     // Import and run the seed function
     const { seedDatabase: seedDb } = require('./seed-database');
@@ -150,15 +155,15 @@ const seedDatabase = () => {
 
 const createGitHooks = () => {
   logger.info('Setting up Git hooks...');
-  
+
   const hooksDir = path.join(process.cwd(), '.git', 'hooks');
   const preCommitHook = path.join(hooksDir, 'pre-commit');
-  
+
   if (!fs.existsSync(hooksDir)) {
     logger.warn('.git directory not found. Skipping Git hooks setup.');
     return;
   }
-  
+
   const preCommitContent = `#!/bin/sh
 # Pre-commit hook to run linting and tests
 
@@ -180,7 +185,7 @@ fi
 
 echo "Pre-commit checks passed!"
 `;
-  
+
   fs.writeFileSync(preCommitHook, preCommitContent);
   fs.chmodSync(preCommitHook, '755');
   logger.info('Git hooks configured');
@@ -194,41 +199,41 @@ const setupDev = async (options: SetupOptions = {}) => {
     runTests = true,
     seedDatabase: shouldSeed = false,
   } = options;
-  
+
   logger.info('Setting up development environment...');
-  
+
   // Check prerequisites
   checkNodeVersion();
   const packageManager = checkPackageManager();
-  
+
   // Install dependencies
   if (installDeps) {
     installDependencies(packageManager);
   }
-  
+
   // Setup environment
   if (setupEnv) {
     setupEnvironment();
   }
-  
+
   // Setup Docker
   if (setupDocker) {
     setupDocker();
   }
-  
+
   // Create Git hooks
   createGitHooks();
-  
+
   // Run tests
   if (runTests) {
     runTests();
   }
-  
+
   // Seed database
   if (shouldSeed) {
     seedDatabase();
   }
-  
+
   logger.info('Development environment setup completed!');
   logger.info('');
   logger.info('Next steps:');
@@ -249,7 +254,7 @@ if (require.main === module) {
     runTests: !args.includes('--no-tests'),
     seedDatabase: args.includes('--seed'),
   };
-  
+
   setupDev(options);
 }
 

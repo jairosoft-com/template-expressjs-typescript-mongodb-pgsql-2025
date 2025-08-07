@@ -22,7 +22,7 @@ export abstract class BaseComponent implements IComponent {
     this.router = Router();
     this.basePath = basePath || `/api/v${this.version}/${this.name}`;
     this.logger = createChildLogger(`component:${this.name}`);
-    
+
     // Initialize routes
     this.initializeRoutes();
   }

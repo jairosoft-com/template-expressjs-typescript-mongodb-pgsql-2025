@@ -66,14 +66,14 @@ describe('Directory Structure Compliance', () => {
   describe('File naming conventions', () => {
     it('should use plural naming for user module files', () => {
       const usersPath = path.join(srcPath, 'components', 'users');
-      
+
       // Assert plural file names exist
       expect(fs.existsSync(path.join(usersPath, 'users.controller.ts'))).toBe(true);
       expect(fs.existsSync(path.join(usersPath, 'users.service.ts'))).toBe(true);
       expect(fs.existsSync(path.join(usersPath, 'users.routes.ts'))).toBe(true);
       expect(fs.existsSync(path.join(usersPath, 'users.types.ts'))).toBe(true);
       expect(fs.existsSync(path.join(usersPath, 'users.validation.ts'))).toBe(true);
-      
+
       // Assert singular file names do NOT exist
       expect(fs.existsSync(path.join(usersPath, 'user.controller.ts'))).toBe(false);
       expect(fs.existsSync(path.join(usersPath, 'user.service.ts'))).toBe(false);
@@ -84,7 +84,7 @@ describe('Directory Structure Compliance', () => {
 
     it('should have test files co-located with components', () => {
       const usersPath = path.join(srcPath, 'components', 'users');
-      
+
       // Assert test files exist in component directory
       expect(fs.existsSync(path.join(usersPath, 'users.controller.spec.ts'))).toBe(true);
       expect(fs.existsSync(path.join(usersPath, 'users.service.spec.ts'))).toBe(true);

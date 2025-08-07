@@ -9,7 +9,8 @@ const options = {
     info: {
       title: 'Express Microservice Template API',
       version: '1.0.0',
-      description: 'A production-grade template for Express.js microservices with comprehensive API documentation',
+      description:
+        'A production-grade template for Express.js microservices with comprehensive API documentation',
       contact: {
         name: 'API Support',
         email: 'support@example.com',
@@ -281,17 +282,21 @@ const options = {
 const specs = swaggerJsdoc(options);
 
 export const setupSwagger = (app: Express) => {
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
-    customCss: '.swagger-ui .topbar { display: none }',
-    customSiteTitle: 'Express Microservice Template API Documentation',
-    customfavIcon: '/favicon.ico',
-    swaggerOptions: {
-      docExpansion: 'list',
-      filter: true,
-      showRequestHeaders: true,
-      showCommonExtensions: true,
-    },
-  }));
+  app.use(
+    '/api-docs',
+    swaggerUi.serve,
+    swaggerUi.setup(specs, {
+      customCss: '.swagger-ui .topbar { display: none }',
+      customSiteTitle: 'Express Microservice Template API Documentation',
+      customfavIcon: '/favicon.ico',
+      swaggerOptions: {
+        docExpansion: 'list',
+        filter: true,
+        showRequestHeaders: true,
+        showCommonExtensions: true,
+      },
+    })
+  );
 
   // Serve OpenAPI spec as JSON
   app.get('/api-docs.json', (req, res) => {

@@ -70,16 +70,16 @@ const extractUserId = (req: Request): string | undefined => {
  */
 const sanitizeBody = (body: any): any => {
   if (!body) return body;
-  
+
   const sanitized = { ...body };
   const sensitiveFields = ['password', 'token', 'secret', 'key', 'authorization'];
-  
-  sensitiveFields.forEach(field => {
+
+  sensitiveFields.forEach((field) => {
     if (sanitized[field]) {
       sanitized[field] = '[REDACTED]';
     }
   });
-  
+
   return sanitized;
 };
 
@@ -90,16 +90,16 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction) =
   // Generate unique request ID
   req.requestId = generateRequestId();
   req.startTime = Date.now();
-  
+
   // Create child logger with correlation ID
   const childLogger = createChildLogger(req.requestId);
-  
+
   // Attach logger to request for use in routes
   req.logger = childLogger;
-  
+
   // Extract user ID if available
   const userId = extractUserId(req);
-  
+
   // Create request log
   const requestLog: RequestLog = {
     method: req.method,
@@ -113,13 +113,16 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction) =
     query: Object.keys(req.query).length > 0 ? req.query : undefined,
     params: Object.keys(req.params).length > 0 ? req.params : undefined,
   };
-  
+
   // Log request with child logger
-  childLogger.info({
-    ...requestLog,
-    type: 'request'
-  }, 'Incoming request');
-  
+  childLogger.info(
+    {
+      ...requestLog,
+      type: 'request',
+    },
+    'Incoming request'
+  );
+
   next();
 };
 
@@ -129,13 +132,13 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction) =
 export const responseLogger = (req: Request, res: Response, next: NextFunction) => {
   const originalSend = res.send;
   const userId = extractUserId(req);
-  
+
   // Get child logger from request or create new one
   const childLogger = req.logger || createChildLogger(req.requestId);
-  
-  res.send = function(body) {
+
+  res.send = function (body) {
     const responseTime = Date.now() - req.startTime;
-    
+
     // Create response log
     const responseLog: ResponseLog = {
       method: req.method,
@@ -147,7 +150,7 @@ export const responseLogger = (req: Request, res: Response, next: NextFunction) 
       userId,
       contentLength: body ? Buffer.byteLength(body, 'utf8') : 0,
     };
-    
+
     // Log response with appropriate level
     const message = 'Outgoing response';
     if (res.statusCode >= 500) {
@@ -157,11 +160,11 @@ export const responseLogger = (req: Request, res: Response, next: NextFunction) 
     } else {
       childLogger.info({ ...responseLog, type: 'response' }, message);
     }
-    
+
     // Call original send method
     return originalSend.call(this, body);
   };
-  
+
   next();
 };
 
@@ -171,10 +174,10 @@ export const responseLogger = (req: Request, res: Response, next: NextFunction) 
 export const errorLogger = (error: Error, req: Request, res: Response, next: NextFunction) => {
   const responseTime = Date.now() - req.startTime;
   const userId = extractUserId(req);
-  
+
   // Get child logger from request or create new one
   const childLogger = req.logger || createChildLogger(req.requestId);
-  
+
   // Create error log
   const errorLog: ErrorLog = {
     method: req.method,
@@ -187,14 +190,17 @@ export const errorLogger = (error: Error, req: Request, res: Response, next: Nex
     userId,
     responseTime,
   };
-  
+
   // Log error with child logger
-  childLogger.error({
-    ...errorLog,
-    type: 'error',
-    err: error
-  }, 'Request error');
-  
+  childLogger.error(
+    {
+      ...errorLog,
+      type: 'error',
+      err: error,
+    },
+    'Request error'
+  );
+
   next(error);
 };
 
@@ -203,23 +209,23 @@ export const errorLogger = (error: Error, req: Request, res: Response, next: Nex
  */
 export const performanceMonitor = (req: Request, res: Response, next: NextFunction) => {
   const startTime = process.hrtime();
-  
+
   // Get child logger from request or create new one
   const childLogger = req.logger || createChildLogger(req.requestId);
-  
+
   res.on('finish', () => {
     const [seconds, nanoseconds] = process.hrtime(startTime);
     const duration = seconds * 1000 + nanoseconds / 1000000; // Convert to milliseconds
-    
+
     const perfData = {
       method: req.method,
       url: req.url,
       duration: Math.round(duration),
       statusCode: res.statusCode,
       requestId: req.requestId,
-      type: 'performance'
+      type: 'performance',
     };
-    
+
     // Log slow requests (over 1 second)
     if (duration > 1000) {
       childLogger.warn(perfData, 'Slow request detected');
@@ -228,7 +234,7 @@ export const performanceMonitor = (req: Request, res: Response, next: NextFuncti
       childLogger.debug(perfData, 'Request performance');
     }
   });
-  
+
   next();
 };
 
@@ -240,7 +246,7 @@ export const healthCheckLogger = (req: Request, res: Response, next: NextFunctio
   if (req.url === '/' || req.url === '/health') {
     return next();
   }
-  
+
   // For all other requests, use the standard logging
   requestLogger(req, res, next);
 };
