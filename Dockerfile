@@ -4,6 +4,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
+# Generate Prisma client
+RUN npx prisma generate
 RUN npm run build
 
 # Stage 2: Production
@@ -12,5 +14,10 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
+# Copy Prisma schema and migrations
+COPY prisma ./prisma
+# Generate Prisma client for production
+RUN npx prisma generate
 EXPOSE 3001
-CMD ["node", "dist/server.js"]
+# Run migrations and start server
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]

@@ -8,12 +8,16 @@ services:
       - "3001:3001"
     volumes:
       - ./src:/app/src
+      - ./prisma:/app/prisma
     env_file: .env
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/mydatabase
+      USE_PRISMA: "false"  # Set to "true" to use Prisma instead of Mongoose
     depends_on:
       - postgres
       - mongo
       - redis
-    command: npm run dev
+    command: sh -c "npx prisma migrate dev && npm run dev"
 
   postgres:
     image: postgres:16-alpine
