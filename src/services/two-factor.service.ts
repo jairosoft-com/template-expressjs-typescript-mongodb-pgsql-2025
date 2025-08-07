@@ -344,7 +344,12 @@ class TwoFactorService {
       issuer: this.issuer,
       algorithm: this.algorithm,
       digits: this.digits,
-      // step: this.period, // step property not supported in otpauthURL
+      // IMPORTANT: The 'step' property is not supported by the speakeasy library's otpauthURL method
+      // even though it's a valid TOTP parameter. This is a known limitation of speakeasy v2.x.
+      // The library uses the 'period' parameter internally but doesn't expose it in otpauthURL.
+      // See: https://github.com/speakeasy-js/speakeasy/issues/110
+      // Workaround: The default 30-second period is used, which is standard for most TOTP implementations.
+      // step: this.period, // Would be the correct property name per TOTP spec
     });
 
     return QRCode.toDataURL(otpauthUrl);

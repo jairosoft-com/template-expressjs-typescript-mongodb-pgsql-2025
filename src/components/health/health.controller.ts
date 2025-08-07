@@ -273,12 +273,28 @@ const checkMongoDB = async (): Promise<HealthCheck> => {
     // Try to connect to MongoDB
     await connectMongo();
 
-    // Test the connection with a simple query
+    // Import mongoose to check connection state
     const { default: mongoose } = await import('mongoose');
-    const adminDb = mongoose.connection.db?.admin();
+    
+    // Check connection readyState
+    // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
+    if (mongoose.connection.readyState !== 1) {
+      const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
+      throw new Error(`MongoDB connection state: ${states[mongoose.connection.readyState] || 'unknown'}`);
+    }
+    
+    // Verify we have a database connection
+    if (!mongoose.connection.db) {
+      throw new Error('MongoDB database connection not established');
+    }
+    
+    // Get admin database for ping
+    const adminDb = mongoose.connection.db.admin();
     if (!adminDb) {
       throw new Error('MongoDB admin database not available');
     }
+    
+    // Ping the database to verify it's responsive
     await adminDb.ping();
 
     const responseTime = Date.now() - startTime;
@@ -288,9 +304,11 @@ const checkMongoDB = async (): Promise<HealthCheck> => {
       message: 'MongoDB connection is healthy',
       responseTime,
       details: {
-        database: mongoose.connection.name,
-        host: mongoose.connection.host,
-        port: mongoose.connection.port,
+        database: mongoose.connection.name || 'unknown',
+        host: mongoose.connection.host || 'unknown',
+        port: mongoose.connection.port || 27017,
+        readyState: mongoose.connection.readyState,
+        readyStateText: 'connected',
       },
     };
   } catch (error) {

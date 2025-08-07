@@ -4,6 +4,21 @@ import { ApiError } from '@common/utils/ApiError';
 import { mockUserRepository } from './mock.user.repository';
 
 /**
+ * Helper function to safely concatenate user names
+ * Handles null/undefined values gracefully
+ */
+function formatUserName(firstName?: string | null, lastName?: string | null): string {
+  const first = firstName?.trim() || '';
+  const last = lastName?.trim() || '';
+  
+  if (first && last) {
+    return `${first} ${last}`;
+  }
+  
+  return first || last || 'Unknown User';
+}
+
+/**
  * User Repository
  *
  * Implements the repository pattern for user data access.
@@ -25,7 +40,7 @@ export class UserRepository {
 
       return {
         id: user.id,
-        name: `${user.firstName} ${user.lastName}`,
+        name: formatUserName(user.firstName, user.lastName),
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
@@ -51,7 +66,7 @@ export class UserRepository {
 
       return {
         id: user.id,
-        name: `${user.firstName} ${user.lastName}`,
+        name: formatUserName(user.firstName, user.lastName),
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
@@ -93,7 +108,7 @@ export class UserRepository {
 
       return {
         id: newUser.id,
-        name: `${newUser.firstName} ${newUser.lastName}`,
+        name: formatUserName(newUser.firstName, newUser.lastName),
         firstName: newUser.firstName,
         lastName: newUser.lastName,
         email: newUser.email,
@@ -131,7 +146,7 @@ export class UserRepository {
 
       return {
         id: updatedUser.id,
-        name: `${updatedUser.firstName} ${updatedUser.lastName}`,
+        name: formatUserName(updatedUser.firstName, updatedUser.lastName),
         firstName: updatedUser.firstName,
         lastName: updatedUser.lastName,
         email: updatedUser.email,
@@ -178,7 +193,7 @@ export class UserRepository {
 
       const userPublicData = users.map((user) => ({
         id: user.id,
-        name: `${user.firstName} ${user.lastName}`,
+        name: formatUserName(user.firstName, user.lastName),
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,

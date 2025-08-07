@@ -299,7 +299,7 @@ class EventService extends EventEmitter {
     // Update user status
     if (event.userId) {
       // Use public API to broadcast user status
-      (socketService as any).broadcastUserStatus(event.userId, 'online');
+      socketService.broadcastUserStatus(event.userId, 'online');
     }
   }
 
@@ -309,7 +309,7 @@ class EventService extends EventEmitter {
     // Update user status
     if (event.userId) {
       // Use public API to broadcast user status
-      (socketService as any).broadcastUserStatus(event.userId, 'offline');
+      socketService.broadcastUserStatus(event.userId, 'offline');
     }
   }
 
@@ -345,7 +345,7 @@ class EventService extends EventEmitter {
     logger.info(`Data created: ${event.type}`);
 
     // Broadcast data creation
-    (socketService as any).io?.emit('data_created', {
+    socketService.io?.emit('data_created', {
       type: event.type,
       data: event.data,
       userId: event.userId,
@@ -357,7 +357,7 @@ class EventService extends EventEmitter {
     logger.info(`Data updated: ${event.type}`);
 
     // Broadcast data update
-    (socketService as any).io?.emit('data_updated', {
+    socketService.io?.emit('data_updated', {
       type: event.type,
       data: event.data,
       userId: event.userId,
@@ -369,7 +369,7 @@ class EventService extends EventEmitter {
     logger.info(`Data deleted: ${event.type}`);
 
     // Broadcast data deletion
-    (socketService as any).io?.emit('data_deleted', {
+    socketService.io?.emit('data_deleted', {
       type: event.type,
       data: event.data,
       userId: event.userId,
@@ -381,7 +381,7 @@ class EventService extends EventEmitter {
     logger.info(`Notification sent: ${event.data.title}`);
 
     // Broadcast notification event
-    (socketService as any).io?.emit('notification_sent', {
+    socketService.io?.emit('notification_sent', {
       userId: event.userId,
       notification: event.data,
       timestamp: new Date().toISOString(),
@@ -392,7 +392,7 @@ class EventService extends EventEmitter {
     logger.info(`Notification read: ${event.data.notificationId}`);
 
     // Broadcast notification read event
-    (socketService as any).io?.emit('notification_read', {
+    socketService.io?.emit('notification_read', {
       userId: event.userId,
       notificationId: event.data.notificationId,
       timestamp: new Date().toISOString(),

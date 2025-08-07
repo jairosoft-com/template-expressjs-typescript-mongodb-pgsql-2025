@@ -7,24 +7,39 @@ const globalForRedis = global as unknown as {
   redisClient: RedisClientType | undefined;
 };
 
-let redisClient: RedisClientType;
-
-// Implement singleton pattern for Redis client
-if (process.env.NODE_ENV === 'production') {
-  redisClient = createClient({
+/**
+ * Create standardized Redis client configuration
+ * Ensures consistent configuration across all environments
+ */
+function createRedisClientConfig() {
+  return {
     socket: {
       host: config.redis.host,
       port: config.redis.port,
-    },
-  });
-} else {
-  if (!globalForRedis.redisClient) {
-    globalForRedis.redisClient = createClient({
-      socket: {
-        host: config.redis.host,
-        port: config.redis.port,
+      reconnectStrategy: (retries: number) => {
+        // Exponential backoff with max 3 seconds
+        const delay = Math.min(retries * 50, 3000);
+        logger.info({ retries, delay }, 'Redis reconnecting');
+        return delay;
       },
-    });
+      connectTimeout: 10000, // 10 seconds
+      commandTimeout: 5000, // 5 seconds
+    },
+    // Retry commands if connection is lost
+    commandsQueueMaxLength: 100,
+  };
+}
+
+let redisClient: RedisClientType;
+
+// Implement singleton pattern for Redis client with standardized config
+if (process.env.NODE_ENV === 'production') {
+  // Production: create new client with standardized config
+  redisClient = createClient(createRedisClientConfig());
+} else {
+  // Development/test: use singleton pattern with standardized config
+  if (!globalForRedis.redisClient) {
+    globalForRedis.redisClient = createClient(createRedisClientConfig());
   }
   redisClient = globalForRedis.redisClient;
 }

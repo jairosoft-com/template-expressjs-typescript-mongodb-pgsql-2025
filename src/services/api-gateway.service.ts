@@ -133,6 +133,7 @@ class ApiGatewayService {
           statusCode: 429,
           message: 'Rate limit exceeded',
         });
+        return;
       }
 
       // Authenticate request if required
@@ -142,6 +143,7 @@ class ApiGatewayService {
           statusCode: 401,
           message: 'Authentication required',
         });
+        return;
       }
 
       // Get service endpoint
