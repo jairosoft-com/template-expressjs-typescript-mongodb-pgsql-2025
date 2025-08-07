@@ -233,28 +233,48 @@ const startServer = async () => {
 
     // Handle uncaught exceptions
     process.on('uncaughtException', (error) => {
-      logger.error('Uncaught Exception:', error);
+      // Check if it's an operational error
+      if (ApiError.isOperationalError(error)) {
+        logger.error({ err: error }, 'Operational error (uncaught)');
+      } else {
+        // Programming error - should restart
+        logger.fatal({ err: error }, 'FATAL: Uncaught Exception - Programming Error');
+      }
       
       // Emit system error event
       eventService.emitEvent('system.error', {
         error: error.message,
         stack: error.stack,
+        isOperational: ApiError.isOperationalError(error),
         timestamp: new Date().toISOString(),
       });
       
+      // Always shutdown for uncaught exceptions
       shutdown('uncaughtException');
     });
 
     // Handle unhandled promise rejections
     process.on('unhandledRejection', (reason, promise) => {
-      logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+      // Convert reason to Error if it's not already
+      const error = reason instanceof Error ? reason : new Error(String(reason));
+      
+      // Check if it's an operational error
+      if (ApiError.isOperationalError(error)) {
+        logger.error({ err: error, promise }, 'Operational error (unhandled rejection)');
+      } else {
+        // Programming error - should restart
+        logger.fatal({ err: error, promise }, 'FATAL: Unhandled Promise Rejection - Programming Error');
+      }
       
       // Emit system error event
       eventService.emitEvent('system.error', {
-        error: reason instanceof Error ? reason.message : String(reason),
+        error: 'Unhandled Promise Rejection',
+        reason: error.message,
+        isOperational: ApiError.isOperationalError(error),
         timestamp: new Date().toISOString(),
       });
       
+      // Always shutdown for unhandled rejections
       shutdown('unhandledRejection');
     });
 

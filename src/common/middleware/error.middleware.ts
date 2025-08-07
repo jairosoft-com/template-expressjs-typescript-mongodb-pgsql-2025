@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { ApiError } from '@common/utils/ApiError';
-import logger from '@common/utils/logger';
+import { createChildLogger } from '@common/utils/logger';
 import config from '@/config';
 
 export const errorMiddleware = (
@@ -27,14 +27,19 @@ export const errorMiddleware = (
     message = fieldErrors || 'Validation failed';
   }
 
+  // Get child logger from request or create new one
+  const childLogger = req.logger || createChildLogger(req.requestId || 'unknown');
+  
   // Log the error for debugging
-  logger.error(
-    `${statusCode} - ${message} - ${req?.originalUrl || 'unknown'} - ${req?.method || 'unknown'} - ${req?.ip || 'unknown'}`,
-    { 
-      stack: config.nodeEnv === 'development' ? error.stack : {},
-      error: error.message 
-    }
-  );
+  childLogger.error({
+    err: error,
+    statusCode,
+    method: req?.method || 'unknown',
+    url: req?.originalUrl || 'unknown',
+    ip: req?.ip || 'unknown',
+    stack: config.nodeEnv === 'development' ? error.stack : undefined,
+    type: 'error-middleware'
+  }, `${statusCode} - ${message}`);
 
   // In production, don't send detailed error messages to the client
   if (config.nodeEnv === 'production' && statusCode === 500) {

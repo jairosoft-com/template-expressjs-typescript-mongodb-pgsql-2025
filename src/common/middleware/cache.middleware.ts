@@ -43,7 +43,7 @@ export const cacheMiddleware = (ttl: number = 60) => {
         // Cache the response data
         redisClient.setEx(cacheKey, ttl, JSON.stringify(data))
           .catch((error) => {
-            logger.error('Failed to cache response:', error);
+            logger.error({ err: error }, 'Failed to cache response');
           });
         
         // Call the original res.json method
@@ -52,7 +52,7 @@ export const cacheMiddleware = (ttl: number = 60) => {
       
       next();
     } catch (error) {
-      logger.error('Cache middleware error:', error);
+      logger.error({ err: error }, 'Cache middleware error');
       // Continue without caching on error
       next();
     }
@@ -86,7 +86,7 @@ export const invalidateCache = (pattern: string = 'cache:*') => {
       
       next();
     } catch (error) {
-      logger.error('Cache invalidation error:', error);
+      logger.error({ err: error }, 'Cache invalidation error');
       // Continue without cache invalidation on error
       next();
     }
@@ -105,7 +105,7 @@ export const checkCacheHealth = async (): Promise<boolean> => {
     await redisClient.ping();
     return true;
   } catch (error) {
-    logger.error('Cache health check failed:', error);
+    logger.error({ err: error }, 'Cache health check failed');
     return false;
   }
 };
