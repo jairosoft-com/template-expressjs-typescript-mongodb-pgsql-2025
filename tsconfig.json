@@ -23,7 +23,9 @@
     "rootDir": "./",
     "sourceMap": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@components/*": ["./src/components/*"],
+      "@common/*": ["./src/common/*"]
     },
     "baseUrl": "."
   },

@@ -42,7 +42,7 @@ npm run test:watch
 # Run a single test file
 npm test -- user.service.spec.ts
 
-# Run E2E tests with Playwright (port 3001)
+# Run E2E tests with Playwright (port 4010)
 npm run test:e2e
 
 # Show E2E test report
@@ -162,7 +162,7 @@ Each feature module (e.g., `src/api/users/`) contains:
 ### Port Configuration
 - **Development server**: Port 4010 (npm run dev)
 - **Docker Compose app**: Port 3001 (docker-compose up)
-- **E2E tests**: Expect app on port 3001
+- **E2E tests**: Expect app on port 4010 (when running locally)
 
 ### Database Connections
 - All databases must be running before starting the app
@@ -178,7 +178,7 @@ Each feature module (e.g., `src/api/users/`) contains:
 ### Testing Strategy
 - Unit tests: Jest with ts-jest, mocked dependencies
 - Integration tests: Supertest for API testing
-- E2E tests: Playwright on port 3001
+- E2E tests: Playwright on port 4010 (locally) or 3001 (Docker)
 - Test files excluded from production build
 
 ### Service Architecture

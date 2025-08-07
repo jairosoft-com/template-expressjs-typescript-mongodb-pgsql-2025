@@ -1,8 +1,8 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { registerNewUser, loginUser, getUserById, updateUserById, deleteUserById, getAllUsers } from './user.service';
+import { registerNewUser, loginUser, getUserById, updateUserById, deleteUserById, getAllUsers } from './users.service';
 import { userRepository } from '../../database/repositories/user.repository';
-import { ApiError } from '../../utils/ApiError';
+import { ApiError } from '../../common/utils/ApiError';
 import config from '../../config';
 
 // Mock dependencies

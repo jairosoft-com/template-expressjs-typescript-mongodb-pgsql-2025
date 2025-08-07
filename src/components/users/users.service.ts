@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { UserRegistrationInput, UserPublicData } from './user.types';
-import { ApiError } from '../../utils/ApiError';
+import { UserRegistrationInput, UserPublicData } from './users.types';
+import { ApiError } from '../../common/utils/ApiError';
 import { userRepository } from '../../database/repositories/user.repository';
 import config from '../../config';
 

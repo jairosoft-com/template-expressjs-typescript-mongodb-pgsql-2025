@@ -3,16 +3,16 @@ import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import config from './config';
-import logger from './utils/logger';
+import logger from './common/utils/logger';
 import { connectPostgres, closePostgres } from './database/postgres';
 import { connectMongo, closeMongo } from './database/mongo';
 import { connectRedis, closeRedis } from './database/redis';
-import { errorMiddleware } from './middleware/error.middleware';
-import { ApiError } from './utils/ApiError';
-import userRouter from './api/users/user.routes';
-import healthRouter from './api/health/health.routes';
+import { errorMiddleware } from './common/middleware/error.middleware';
+import { ApiError } from './common/utils/ApiError';
+import userRouter from './components/users/users.routes';
+import healthRouter from './components/health/health.routes';
 import { setupSwagger } from './config/swagger';
-import { requestLogger, responseLogger, errorLogger, performanceMonitor } from './middleware/logging.middleware';
+import { requestLogger, responseLogger, errorLogger, performanceMonitor } from './common/middleware/logging.middleware';
 
 // Phase 5: Real-time Features
 import { socketService } from './services/socket.service';

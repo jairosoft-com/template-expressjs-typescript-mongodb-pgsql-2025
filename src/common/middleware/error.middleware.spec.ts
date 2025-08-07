@@ -12,7 +12,7 @@ jest.mock('../utils/logger', () => ({
 }));
 
 // Mock config
-jest.mock('../config', () => ({
+jest.mock('../../config', () => ({
   nodeEnv: 'test'
 }));
 

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { UserRegistrationSchema, UserLoginSchema } from './user.validation';
+import { UserRegistrationSchema, UserLoginSchema } from './users.validation';
 
 // Infer types from Zod schemas for type safety
 export type UserRegistrationInput = z.infer<typeof UserRegistrationSchema>['body'];

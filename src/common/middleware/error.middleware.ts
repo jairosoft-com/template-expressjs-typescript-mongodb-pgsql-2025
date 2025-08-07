@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { ApiError } from '../utils/ApiError';
 import logger from '../utils/logger';
-import config from '../config';
+import config from '../../config';
 
 export const errorMiddleware = (
   error: Error,

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import axios, { AxiosResponse } from 'axios';
 import jwt from 'jsonwebtoken';
-import logger from '../utils/logger';
+import logger from '../common/utils/logger';
 import config from '../config';
 import { serviceDiscoveryService } from './service-discovery.service';
 import { eventService } from './event.service';

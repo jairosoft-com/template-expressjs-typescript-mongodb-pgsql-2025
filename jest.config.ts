@@ -8,6 +8,8 @@ const config: Config = {
   testPathIgnorePatterns: ['/node_modules/', '/e2e/'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^@components/(.*)$': '<rootDir>/src/components/$1',
+    '^@common/(.*)$': '<rootDir>/src/common/$1',
   },
   transform: {
     '^.+\\.ts$': ['ts-jest', { isolatedModules: true }],

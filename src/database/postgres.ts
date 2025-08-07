@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 import config from '../config';
-import logger from '../utils/logger';
+import logger from '../common/utils/logger';
 
 // Global variable to store the pool instance (singleton pattern)
 const globalForPg = global as unknown as { pgPool: Pool | undefined };

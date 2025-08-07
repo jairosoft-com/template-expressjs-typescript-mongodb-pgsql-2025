@@ -1,6 +1,6 @@
 import { createClient, RedisClientType } from 'redis';
 import config from '../config';
-import logger from '../utils/logger';
+import logger from '../common/utils/logger';
 
 // Global variable to store the Redis client (singleton pattern)
 const globalForRedis = global as unknown as {

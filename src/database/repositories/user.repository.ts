@@ -1,6 +1,6 @@
-import { UserPublicData } from '../../api/users/user.types';
+import { UserPublicData } from '../../components/users/users.types';
 import { UserModel } from '../models/user.model';
-import { ApiError } from '../../utils/ApiError';
+import { ApiError } from '../../common/utils/ApiError';
 import { mockUserRepository } from './mock.user.repository';
 
 /**

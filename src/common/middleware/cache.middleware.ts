@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import redisClient from '../database/redis';
+import redisClient from '../../database/redis';
 import logger from '../utils/logger';
 
 /**
