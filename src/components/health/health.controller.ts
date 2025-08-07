@@ -275,25 +275,28 @@ const checkMongoDB = async (): Promise<HealthCheck> => {
 
     // Import mongoose to check connection state
     const { default: mongoose } = await import('mongoose');
-    
-    // Check connection readyState
+
+    // Check if the connection is in the connected state before any operations
     // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
     if (mongoose.connection.readyState !== 1) {
       const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
-      throw new Error(`MongoDB connection state: ${states[mongoose.connection.readyState] || 'unknown'}`);
+      const currentState = states[mongoose.connection.readyState] || 'unknown';
+      throw new Error(
+        `MongoDB connection is not in a connected state. Current state: ${currentState} (${mongoose.connection.readyState})`
+      );
     }
-    
-    // Verify we have a database connection
+
+    // After verifying connection state, check if database object exists
     if (!mongoose.connection.db) {
-      throw new Error('MongoDB database connection not established');
+      throw new Error('MongoDB database connection not established despite connected state');
     }
-    
-    // Get admin database for ping
+
+    // Get admin database for ping - this should be safe after connection checks
     const adminDb = mongoose.connection.db.admin();
     if (!adminDb) {
-      throw new Error('MongoDB admin database not available');
+      throw new Error('MongoDB admin database not available despite valid connection');
     }
-    
+
     // Ping the database to verify it's responsive
     await adminDb.ping();
 
