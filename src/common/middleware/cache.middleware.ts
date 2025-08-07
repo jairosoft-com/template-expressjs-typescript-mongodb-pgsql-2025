@@ -52,7 +52,7 @@ export const cacheMiddleware = (ttl: number = 60) => {
       
       next();
     } catch (error) {
-      logger.error('Cache middleware error:', error);
+      logger.error({ err: error }, 'Cache middleware error');
       // Continue without caching on error
       next();
     }
