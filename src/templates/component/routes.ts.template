@@ -2,11 +2,17 @@ import { Router } from 'express';
 import { {{ComponentName}}Controller } from './{{componentName}}.controller';
 import { authMiddleware } from '@common/middleware/auth.middleware';
 import { validateRequest } from '@common/middleware/validation.middleware';
-// import { create{{ComponentName}}Schema, update{{ComponentName}}Schema } from './{{componentName}}.validation';
+import { create{{ComponentName}}Schema, update{{ComponentName}}Schema } from './{{componentName}}.validation';
 
 /**
  * {{ComponentName}} Routes
  * Defines all routes for {{componentName}} operations
+ * 
+ * VALIDATION SETUP:
+ * 1. Validation schemas are imported above
+ * 2. To enable validation for a route, uncomment the validateRequest middleware
+ * 3. Customize the validation schemas in {{componentName}}.validation.ts
+ * 4. The validateRequest middleware will automatically handle validation errors
  */
 export const {{componentName}}Routes = (
   router: Router,

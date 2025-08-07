@@ -139,7 +139,14 @@ export class ComponentRegistry implements IComponentRegistry {
         try {
           // Check if index.ts exists
           statSync(indexPath);
-          
+        } catch (error) {
+          this.logger.debug(
+            `Skipping ${dir}: No index.ts file found in component directory`
+          );
+          continue;
+        }
+
+        try {
           // Try to import the component
           const module = await import(indexPath);
           
@@ -151,12 +158,13 @@ export class ComponentRegistry implements IComponentRegistry {
             this.register(component);
           } else {
             this.logger.warn(
-              `No valid component export found in: ${componentPath}`
+              `Invalid component structure in ${dir}: Missing required properties (name, version, router, basePath)`
             );
           }
         } catch (error) {
           this.logger.debug(
-            `Skipping ${dir}: No index.ts or invalid component`
+            { err: error },
+            `Failed to import component from ${dir}: Module import error`
           );
         }
       }

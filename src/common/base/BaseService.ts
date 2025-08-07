@@ -77,15 +77,28 @@ export abstract class BaseService implements IComponentService {
 
   /**
    * Cache wrapper for operations
+   * 
+   * TODO: Implement actual caching logic using Redis
+   * Example implementation:
+   * ```typescript
+   * import redisClient from '@/database/redis';
+   * 
+   * const cached = await redisClient.get(key);
+   * if (cached) {
+   *   return JSON.parse(cached);
+   * }
+   * const result = await operation();
+   * await redisClient.setEx(key, ttl, JSON.stringify(result));
+   * return result;
+   * ```
    */
   protected async withCache<T>(
-    key: string,
+    _key: string,
     operation: () => Promise<T>,
-    ttl: number = 300
+    _ttl: number = 300
   ): Promise<T> {
-    // This is a placeholder for cache implementation
-    // In a real implementation, you would check cache first
-    // For now, just execute the operation
+    // Placeholder implementation - executes operation without caching
+    // See TODO above for implementation guidance
     return operation();
   }
 
