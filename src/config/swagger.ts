@@ -299,7 +299,7 @@ export const setupSwagger = (app: Express) => {
   );
 
   // Serve OpenAPI spec as JSON
-  app.get('/api-docs.json', (req, res) => {
+  app.get('/api-docs.json', (_req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.send(specs);
   });

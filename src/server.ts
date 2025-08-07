@@ -224,7 +224,7 @@ const startServer = async () => {
         try {
           await componentRegistry.shutdownAll();
         } catch (error) {
-          logger.error('Error shutting down components:', error);
+          logger.error({ error }, 'Error shutting down components');
         }
 
         // Close database connections
@@ -234,7 +234,7 @@ const startServer = async () => {
           await closeRedis();
           logger.info('All database connections closed');
         } catch (error) {
-          logger.error('Error closing database connections:', error);
+          logger.error({ error }, 'Error closing database connections');
         }
 
         // Stop services
@@ -305,7 +305,7 @@ const startServer = async () => {
       shutdown('unhandledRejection');
     });
   } catch (error) {
-    logger.error('Failed to start server:', error);
+    logger.error({ error }, 'Failed to start server');
     process.exit(1);
   }
 };

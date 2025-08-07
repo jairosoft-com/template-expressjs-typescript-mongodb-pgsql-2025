@@ -7,14 +7,39 @@ const globalForRedis = global as unknown as {
   redisClient: RedisClientType | undefined;
 };
 
+/**
+ * Create standardized Redis client configuration
+ * Ensures consistent configuration across all environments
+ */
+function createRedisClientConfig() {
+  return {
+    socket: {
+      host: config.redis.host,
+      port: config.redis.port,
+      reconnectStrategy: (retries: number) => {
+        // Exponential backoff with max 3 seconds
+        const delay = Math.min(retries * 50, 3000);
+        logger.info({ retries, delay }, 'Redis reconnecting');
+        return delay;
+      },
+      connectTimeout: 10000, // 10 seconds
+      commandTimeout: 5000, // 5 seconds
+    },
+    // Retry commands if connection is lost
+    commandsQueueMaxLength: 100,
+  };
+}
+
 let redisClient: RedisClientType;
 
-// Implement singleton pattern for Redis client
+// Implement singleton pattern for Redis client with standardized config
 if (process.env.NODE_ENV === 'production') {
-  redisClient = createClient({ url: config.redis.url });
+  // Production: create new client with standardized config
+  redisClient = createClient(createRedisClientConfig());
 } else {
+  // Development/test: use singleton pattern with standardized config
   if (!globalForRedis.redisClient) {
-    globalForRedis.redisClient = createClient({ url: config.redis.url });
+    globalForRedis.redisClient = createClient(createRedisClientConfig());
   }
   redisClient = globalForRedis.redisClient;
 }
@@ -29,7 +54,7 @@ redisClient.on('ready', () => {
 });
 
 redisClient.on('error', (err) => {
-  logger.error('Redis client error:', err);
+  logger.error({ err }, 'Redis client error');
 });
 
 redisClient.on('end', () => {
@@ -53,7 +78,7 @@ export const connectRedis = async (): Promise<void> => {
     await redisClient.connect();
     logger.info('Successfully connected to Redis');
   } catch (error) {
-    logger.error('Failed to connect to Redis:', error);
+    logger.error({ error }, 'Failed to connect to Redis');
     throw error;
   }
 };
@@ -69,7 +94,7 @@ export const checkRedisHealth = async (): Promise<boolean> => {
     }
     return false;
   } catch (error) {
-    logger.error('Redis health check failed:', error);
+    logger.error({ error }, 'Redis health check failed');
     return false;
   }
 };
@@ -84,7 +109,7 @@ export const closeRedis = async (): Promise<void> => {
       logger.info('Redis connection closed gracefully');
     }
   } catch (error) {
-    logger.error('Error closing Redis connection:', error);
+    logger.error({ error }, 'Error closing Redis connection');
   }
 };
 

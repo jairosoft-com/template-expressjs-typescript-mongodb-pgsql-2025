@@ -11,24 +11,7 @@ import { UserModel } from '../database/models/user.model';
 import { eventService } from './event.service';
 import { parseFullName } from '@common/utils/name.utils';
 
-interface OAuthProfile {
-  id: string;
-  displayName: string;
-  emails: Array<{ value: string; verified?: boolean }>;
-  photos?: Array<{ value: string }>;
-  provider: string;
-}
-
-interface OAuthUser {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  avatar?: string;
-  provider: string;
-  providerId: string;
-  verified: boolean;
-}
+// Removed unused interfaces - they were declared but never used
 
 class OAuthService {
   private strategies: Map<string, any> = new Map();
@@ -41,7 +24,7 @@ class OAuthService {
     this.setupGitHubStrategy();
     this.setupFacebookStrategy();
     this.setupLocalStrategy();
-    
+
     // Serialize user for session
     passport.serializeUser((user: any, done) => {
       done(null, user.id);
@@ -76,12 +59,12 @@ class OAuthService {
         callbackURL: `${config.baseUrl}/api/v1/auth/google/callback`,
         scope: ['profile', 'email'],
       },
-      async (accessToken: string, refreshToken: string, profile: any, done: any) => {
+      async (_accessToken: string, _refreshToken: string, profile: any, done: any) => {
         try {
           const user = await this.handleOAuthLogin(profile, 'google');
           done(null, user);
         } catch (error) {
-          logger.error('Google OAuth error:', error);
+          logger.error({ error }, 'Google OAuth error');
           done(error, null);
         }
       }
@@ -108,12 +91,12 @@ class OAuthService {
         callbackURL: `${config.baseUrl}/api/v1/auth/github/callback`,
         scope: ['user:email'],
       },
-      async (accessToken: string, refreshToken: string, profile: any, done: any) => {
+      async (_accessToken: string, _refreshToken: string, profile: any, done: any) => {
         try {
           const user = await this.handleOAuthLogin(profile, 'github');
           done(null, user);
         } catch (error) {
-          logger.error('GitHub OAuth error:', error);
+          logger.error({ error }, 'GitHub OAuth error');
           done(error, null);
         }
       }
@@ -140,12 +123,12 @@ class OAuthService {
         callbackURL: `${config.baseUrl}/api/v1/auth/facebook/callback`,
         profileFields: ['id', 'displayName', 'photos', 'email'],
       },
-      async (accessToken: string, refreshToken: string, profile: any, done: any) => {
+      async (_accessToken: string, _refreshToken: string, profile: any, done: any) => {
         try {
           const user = await this.handleOAuthLogin(profile, 'facebook');
           done(null, user);
         } catch (error) {
-          logger.error('Facebook OAuth error:', error);
+          logger.error({ error }, 'Facebook OAuth error');
           done(error, null);
         }
       }
@@ -168,30 +151,30 @@ class OAuthService {
       async (email: string, password: string, done: any) => {
         try {
           const user = await UserModel.findOne({ email });
-          
+
           if (!user) {
             return done(null, false, { message: 'Invalid email or password' });
           }
 
           const isPasswordValid = await bcrypt.compare(password, user.password);
-          
+
           if (!isPasswordValid) {
             return done(null, false, { message: 'Invalid email or password' });
           }
 
           // Check if 2FA is enabled
           if (user.twoFactorEnabled) {
-            return done(null, false, { 
+            return done(null, false, {
               message: 'Two-factor authentication required',
               requires2FA: true,
-              userId: user.id 
+              userId: user.id,
             });
           }
 
           done(null, user);
         } catch (error) {
-          logger.error('Local authentication error:', error);
-          done(error, null);
+          logger.error({ error }, 'Local authentication error');
+          done(error as Error, null);
         }
       }
     );
@@ -206,7 +189,7 @@ class OAuthService {
    */
   private async handleOAuthLogin(profile: any, provider: string): Promise<any> {
     const email = profile.emails?.[0]?.value;
-    
+
     if (!email) {
       throw new Error(`No email found in ${provider} profile`);
     }
@@ -230,13 +213,17 @@ class OAuthService {
       });
 
       logger.info(`New user created via ${provider} OAuth: ${email}`);
-      
+
       // Emit user registration event
-      await eventService.emitEvent('user.registered', {
-        email,
-        provider,
-        method: 'oauth',
-      }, user.id);
+      await eventService.emitEvent(
+        'user.registered',
+        {
+          email,
+          provider,
+          method: 'oauth',
+        },
+        user.id
+      );
     } else {
       // Update existing user's OAuth info
       user.oauthProvider = provider;
@@ -249,11 +236,15 @@ class OAuthService {
     }
 
     // Emit login event
-    await eventService.emitEvent('user.logged_in', {
-      email,
-      provider,
-      method: 'oauth',
-    }, user.id);
+    await eventService.emitEvent(
+      'user.logged_in',
+      {
+        email,
+        provider,
+        method: 'oauth',
+      },
+      user.id
+    );
 
     return user;
   }
@@ -269,7 +260,7 @@ class OAuthService {
         provider: user.oauthProvider || 'local',
       },
       config.jwt.secret,
-      { expiresIn: config.jwt.expiresIn }
+      { expiresIn: config.jwt.expiresIn } as jwt.SignOptions
     );
   }
 
@@ -308,7 +299,7 @@ class OAuthService {
     if (!user) return [];
 
     const accounts = [];
-    
+
     if (user.oauthProvider) {
       accounts.push({
         provider: user.oauthProvider,

@@ -86,7 +86,7 @@ const sanitizeBody = (body: any): any => {
 /**
  * Request logging middleware
  */
-export const requestLogger = (req: Request, res: Response, next: NextFunction) => {
+export const requestLogger = (req: Request, _res: Response, next: NextFunction) => {
   // Generate unique request ID
   req.requestId = generateRequestId();
   req.startTime = Date.now();

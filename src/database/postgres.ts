@@ -11,7 +11,11 @@ let pool: Pool;
 if (process.env.NODE_ENV === 'production') {
   // In production, always create a new pool
   pool = new Pool({
-    connectionString: config.postgres.url,
+    host: config.postgres.host,
+    port: config.postgres.port,
+    database: config.postgres.database,
+    user: config.postgres.user,
+    password: config.postgres.password,
     max: 20, // Maximum number of clients in the pool
     idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
     connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
@@ -20,7 +24,11 @@ if (process.env.NODE_ENV === 'production') {
   // In development, use singleton pattern to prevent multiple pools during hot reload
   if (!globalForPg.pgPool) {
     globalForPg.pgPool = new Pool({
-      connectionString: config.postgres.url,
+      host: config.postgres.host,
+      port: config.postgres.port,
+      database: config.postgres.database,
+      user: config.postgres.user,
+      password: config.postgres.password,
       max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 2000,
@@ -35,7 +43,7 @@ pool.on('connect', () => {
 });
 
 pool.on('error', (err: Error) => {
-  logger.error('Unexpected error on idle PostgreSQL client', err);
+  logger.error({ err }, 'Unexpected error on idle PostgreSQL client');
 });
 
 pool.on('remove', () => {
@@ -52,7 +60,7 @@ export const connectPostgres = async (): Promise<void> => {
     client.release();
     logger.info('Successfully connected to PostgreSQL');
   } catch (error) {
-    logger.error('Failed to connect to PostgreSQL:', error);
+    logger.error({ error }, 'Failed to connect to PostgreSQL');
     throw error;
   }
 };
@@ -67,7 +75,7 @@ export const checkPostgresHealth = async (): Promise<boolean> => {
     client.release();
     return true;
   } catch (error) {
-    logger.error('PostgreSQL health check failed:', error);
+    logger.error({ error }, 'PostgreSQL health check failed');
     return false;
   }
 };
@@ -80,7 +88,7 @@ export const closePostgres = async (): Promise<void> => {
     await pool.end();
     logger.info('PostgreSQL connections closed gracefully');
   } catch (error) {
-    logger.error('Error closing PostgreSQL connections:', error);
+    logger.error({ error }, 'Error closing PostgreSQL connections');
   }
 };
 

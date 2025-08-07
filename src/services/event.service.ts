@@ -168,7 +168,7 @@ class EventService extends EventEmitter {
 
         logger.debug(`Event ${event.type} processed by handler`);
       } catch (error) {
-        logger.error(`Error processing event ${event.type}:`, error);
+        logger.error({ error }, `Error processing event ${event.type}`);
 
         // Update event log with error
         const eventLog = this.eventLogs.find((log) => log.eventId === event.id);
@@ -206,7 +206,7 @@ class EventService extends EventEmitter {
         await this.processEvent(event);
         logger.debug(`Replayed event: ${event.type} (${event.id})`);
       } catch (error) {
-        logger.error(`Error replaying event ${event.type}:`, error);
+        logger.error({ error }, `Error replaying event ${event.type}`);
       }
     }
 
@@ -298,6 +298,7 @@ class EventService extends EventEmitter {
 
     // Update user status
     if (event.userId) {
+      // Use public API to broadcast user status
       socketService.broadcastUserStatus(event.userId, 'online');
     }
   }
@@ -307,6 +308,7 @@ class EventService extends EventEmitter {
 
     // Update user status
     if (event.userId) {
+      // Use public API to broadcast user status
       socketService.broadcastUserStatus(event.userId, 'offline');
     }
   }
@@ -324,12 +326,12 @@ class EventService extends EventEmitter {
     }
   }
 
-  private async handleSystemStartup(event: EventData): Promise<void> {
+  private async handleSystemStartup(_event: EventData): Promise<void> {
     logger.info('System startup event processed');
     socketService.broadcastSystemMessage('System is starting up', 'info');
   }
 
-  private async handleSystemShutdown(event: EventData): Promise<void> {
+  private async handleSystemShutdown(_event: EventData): Promise<void> {
     logger.info('System shutdown event processed');
     socketService.broadcastSystemMessage('System is shutting down', 'warning');
   }

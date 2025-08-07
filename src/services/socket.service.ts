@@ -31,8 +31,16 @@ interface LiveUpdate {
   broadcast: boolean;
 }
 
-class SocketService {
-  private io: SocketIOServer | null = null;
+// Public interface for SocketService to use in other services
+export interface ISocketService {
+  io: SocketIOServer | null;
+  broadcastUserStatus(userId: string, status: 'online' | 'offline'): void;
+  sendNotification(userId: string, notification: Omit<Notification, 'id' | 'userId' | 'read' | 'createdAt'>): void;
+  broadcastLiveUpdate(update: Omit<LiveUpdate, 'id' | 'timestamp'>): void;
+}
+
+class SocketService implements ISocketService {
+  public io: SocketIOServer | null = null; // Made public for interface
   private connectedUsers: Map<string, SocketUser> = new Map();
   private notifications: Map<string, Notification[]> = new Map();
   private liveUpdates: LiveUpdate[] = [];
@@ -77,7 +85,7 @@ class SocketService {
 
         next();
       } catch (error) {
-        logger.error('Socket authentication failed:', error);
+        logger.error({ error }, 'Socket authentication failed');
         next(new Error('Invalid authentication token'));
       }
     });
@@ -293,7 +301,7 @@ class SocketService {
   /**
    * Broadcast user status
    */
-  private broadcastUserStatus(userId: string, status: 'online' | 'offline'): void {
+  public broadcastUserStatus(userId: string, status: 'online' | 'offline'): void {
     const user = this.connectedUsers.get(userId);
     if (user) {
       this.io?.emit('user_status', {
@@ -460,6 +468,32 @@ class SocketService {
       this.connectedUsers.delete(userId);
       logger.info(`User ${userId} forcefully disconnected`);
     }
+  }
+
+  /**
+   * Broadcast live update to all connected clients
+   * Implements the ISocketService interface method
+   */
+  public broadcastLiveUpdate(update: Omit<LiveUpdate, 'id' | 'timestamp'>): void {
+    const liveUpdate: LiveUpdate = {
+      id: `update_${Date.now()}`,
+      ...update,
+      timestamp: new Date(),
+      broadcast: true,
+    };
+
+    // Store the update
+    this.liveUpdates.push(liveUpdate);
+    
+    // Keep only last 100 updates
+    if (this.liveUpdates.length > 100) {
+      this.liveUpdates.shift();
+    }
+
+    // Broadcast to all connected clients
+    this.io?.emit('live_update', liveUpdate);
+    
+    logger.info({ updateType: update.type }, 'Live update broadcasted');
   }
 }
 

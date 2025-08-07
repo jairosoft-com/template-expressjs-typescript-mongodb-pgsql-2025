@@ -4,6 +4,21 @@ import { ApiError } from '@common/utils/ApiError';
 import { mockUserRepository } from './mock.user.repository';
 
 /**
+ * Helper function to safely concatenate user names
+ * Handles null/undefined values gracefully
+ */
+function formatUserName(firstName?: string | null, lastName?: string | null): string {
+  const first = firstName?.trim() || '';
+  const last = lastName?.trim() || '';
+  
+  if (first && last) {
+    return `${first} ${last}`;
+  }
+  
+  return first || last || 'Unknown User';
+}
+
+/**
  * User Repository
  *
  * Implements the repository pattern for user data access.
@@ -25,8 +40,12 @@ export class UserRepository {
 
       return {
         id: user.id,
-        name: user.name,
+        name: formatUserName(user.firstName, user.lastName),
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
+        avatar: user.avatar,
+        emailVerified: user.emailVerified,
       };
     } catch (error) {
       throw new ApiError(500, 'Database error while finding user');
@@ -47,8 +66,12 @@ export class UserRepository {
 
       return {
         id: user.id,
-        name: user.name,
+        name: formatUserName(user.firstName, user.lastName),
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
+        avatar: user.avatar,
+        emailVerified: user.emailVerified,
       };
     } catch (error) {
       throw new ApiError(500, 'Database error while finding user by email');
@@ -75,7 +98,8 @@ export class UserRepository {
    * @returns Promise<UserPublicData>
    */
   async create(userData: {
-    name: string;
+    firstName: string;
+    lastName: string;
     email: string;
     password: string;
   }): Promise<UserPublicData> {
@@ -84,8 +108,12 @@ export class UserRepository {
 
       return {
         id: newUser.id,
-        name: newUser.name,
+        name: formatUserName(newUser.firstName, newUser.lastName),
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
         email: newUser.email,
+        avatar: newUser.avatar,
+        emailVerified: newUser.emailVerified,
       };
     } catch (error: any) {
       if (error.code === 11000) {
@@ -104,7 +132,7 @@ export class UserRepository {
    */
   async updateById(
     id: string,
-    updateData: Partial<{ name: string; email: string }>
+    updateData: Partial<{ firstName: string; lastName: string; email: string }>
   ): Promise<UserPublicData | null> {
     try {
       const updatedUser = await UserModel.findByIdAndUpdate(id, updateData, {
@@ -118,8 +146,12 @@ export class UserRepository {
 
       return {
         id: updatedUser.id,
-        name: updatedUser.name,
+        name: formatUserName(updatedUser.firstName, updatedUser.lastName),
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
         email: updatedUser.email,
+        avatar: updatedUser.avatar,
+        emailVerified: updatedUser.emailVerified,
       };
     } catch (error: any) {
       if (error.code === 11000) {
@@ -161,8 +193,12 @@ export class UserRepository {
 
       const userPublicData = users.map((user) => ({
         id: user.id,
-        name: user.name,
+        name: formatUserName(user.firstName, user.lastName),
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
+        avatar: user.avatar,
+        emailVerified: user.emailVerified,
       }));
 
       return {
