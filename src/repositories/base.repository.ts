@@ -37,7 +37,7 @@ export abstract class BaseRepository<T, CreateInput, UpdateInput> {
    */
   async findById(id: string): Promise<T | null> {
     try {
-      const result = await this.model.findUnique({
+      const result = await (this.model as any).findUnique({
         where: { id },
       });
       return result as T | null;
@@ -57,7 +57,7 @@ export abstract class BaseRepository<T, CreateInput, UpdateInput> {
     orderBy?: any;
   }): Promise<T[]> {
     try {
-      const result = await this.model.findMany(params);
+      const result = await (this.model as any).findMany(params);
       return result as T[];
     } catch (error) {
       this.logger.error({ err: error, params }, `Error finding ${this.modelName} records`);
@@ -70,7 +70,7 @@ export abstract class BaseRepository<T, CreateInput, UpdateInput> {
    */
   async count(where?: any): Promise<number> {
     try {
-      const result = await this.model.count({ where });
+      const result = await (this.model as any).count({ where });
       return result;
     } catch (error) {
       this.logger.error({ err: error, where }, `Error counting ${this.modelName} records`);
@@ -83,7 +83,7 @@ export abstract class BaseRepository<T, CreateInput, UpdateInput> {
    */
   async create(data: CreateInput): Promise<T> {
     try {
-      const result = await this.model.create({ data });
+      const result = await (this.model as any).create({ data });
       this.logger.info({ id: (result as any).id }, `${this.modelName} created`);
       return result as T;
     } catch (error) {
@@ -97,7 +97,7 @@ export abstract class BaseRepository<T, CreateInput, UpdateInput> {
    */
   async update(id: string, data: UpdateInput): Promise<T> {
     try {
-      const result = await this.model.update({
+      const result = await (this.model as any).update({
         where: { id },
         data,
       });
@@ -114,7 +114,7 @@ export abstract class BaseRepository<T, CreateInput, UpdateInput> {
    */
   async delete(id: string): Promise<T> {
     try {
-      const result = await this.model.delete({
+      const result = await (this.model as any).delete({
         where: { id },
       });
       this.logger.info({ id }, `${this.modelName} deleted`);
@@ -130,7 +130,7 @@ export abstract class BaseRepository<T, CreateInput, UpdateInput> {
    */
   async deleteMany(where?: any): Promise<{ count: number }> {
     try {
-      const result = await this.model.deleteMany({ where });
+      const result = await (this.model as any).deleteMany({ where });
       this.logger.info({ count: result.count }, `${this.modelName} records deleted`);
       return result;
     } catch (error) {
@@ -142,10 +142,10 @@ export abstract class BaseRepository<T, CreateInput, UpdateInput> {
   /**
    * Execute a transaction
    */
-  async transaction<R>(fn: (tx: PrismaClient) => Promise<R>): Promise<R> {
+  async transaction<R>(fn: (tx: any) => Promise<R>): Promise<R> {
     try {
-      const result = await this.prisma.$transaction(fn);
-      return result;
+      const result = await this.prisma.$transaction(fn as any);
+      return result as R;
     } catch (error) {
       this.logger.error({ err: error }, `Transaction failed for ${this.modelName}`);
       throw error;

@@ -104,7 +104,7 @@ export class UserService extends BaseService {
     // Prepare user public data
     let firstName: string;
     let lastName: string;
-    
+
     if (USE_PRISMA) {
       firstName = user.firstName;
       lastName = user.lastName;
@@ -113,7 +113,7 @@ export class UserService extends BaseService {
       firstName = parsed.firstName;
       lastName = parsed.lastName;
     }
-    
+
     const userPublicData: UserPublicData = {
       id: user.id,
       email: user.email,

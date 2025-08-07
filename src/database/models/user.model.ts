@@ -126,12 +126,12 @@ const userSchema = new Schema<IUser>(
   {
     timestamps: true,
     toJSON: {
-      transform: function (doc, ret) {
-        delete ret.password;
-        delete ret.twoFactorSecret;
-        delete ret.twoFactorBackupCodes;
-        delete ret.loginAttempts;
-        delete ret.lockUntil;
+      transform: function (_doc, ret) {
+        delete (ret as any).password;
+        delete (ret as any).twoFactorSecret;
+        delete (ret as any).twoFactorBackupCodes;
+        delete (ret as any).loginAttempts;
+        delete (ret as any).lockUntil;
         return ret;
       },
     },
@@ -194,7 +194,7 @@ userSchema.methods.incrementLoginAttempts = async function (): Promise<void> {
 
   // Lock account after 5 failed attempts
   if (this.loginAttempts + 1 >= 5 && !this.isLocked()) {
-    updates.$set = { lockUntil: new Date(Date.now() + 2 * 60 * 60 * 1000) }; // 2 hours
+    (updates as any).$set = { lockUntil: new Date(Date.now() + 2 * 60 * 60 * 1000) }; // 2 hours
   }
 
   return this.updateOne(updates);

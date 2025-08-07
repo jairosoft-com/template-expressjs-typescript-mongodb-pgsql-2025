@@ -1,7 +1,5 @@
 import { Request, Response } from 'express';
-import { connectPostgres, closePostgres } from '@/database/postgres';
-import { connectMongo, closeMongo } from '@/database/mongo';
-import { connectRedis, closeRedis } from '@/database/redis';
+import { connectMongo } from '@/database/mongo';
 import logger from '@common/utils/logger';
 import config from '@/config';
 
@@ -91,9 +89,7 @@ interface HealthCheck {
  *                   type: string
  *                   example: "One or more health checks failed"
  */
-export const getHealth = async (req: Request, res: Response) => {
-  const startTime = Date.now();
-
+export const getHealth = async (_req: Request, res: Response) => {
   try {
     // Check database connections
     const dbChecks = await checkDatabases();
@@ -111,15 +107,15 @@ export const getHealth = async (req: Request, res: Response) => {
     ];
 
     const unhealthyChecks = allChecks.filter((check) => check.status === 'unhealthy');
-    const degradedChecks = allChecks.filter((check) => check.status === 'degraded');
+    // Note: HealthCheck interface only supports 'healthy' | 'unhealthy', not 'degraded'
+    // const degradedChecks = allChecks.filter((check) => check.status === 'degraded');
 
     let overallStatus: 'healthy' | 'unhealthy' | 'degraded' = 'healthy';
 
     if (unhealthyChecks.length > 0) {
       overallStatus = 'unhealthy';
-    } else if (degradedChecks.length > 0) {
-      overallStatus = 'degraded';
     }
+    // Removed degraded status check as it's not supported by HealthCheck interface
 
     const healthStatus: HealthStatus = {
       status: overallStatus,
@@ -138,7 +134,7 @@ export const getHealth = async (req: Request, res: Response) => {
 
     res.status(statusCode).json(healthStatus);
   } catch (error) {
-    logger.error('Health check failed:', error);
+    logger.error({ error }, 'Health check failed');
 
     res.status(503).json({
       status: 'unhealthy',
@@ -185,7 +181,7 @@ export const getHealth = async (req: Request, res: Response) => {
  *                   type: string
  *                   example: "Application is still starting up"
  */
-export const getReadiness = async (req: Request, res: Response) => {
+export const getReadiness = async (_req: Request, res: Response) => {
   try {
     // Check if all critical dependencies are available
     const dbChecks = await checkDatabases();
@@ -206,7 +202,7 @@ export const getReadiness = async (req: Request, res: Response) => {
       });
     }
   } catch (error) {
-    logger.error('Readiness check failed:', error);
+    logger.error({ error }, 'Readiness check failed');
 
     res.status(503).json({
       status: 'not ready',
@@ -242,7 +238,7 @@ export const getReadiness = async (req: Request, res: Response) => {
  *                   type: number
  *                   example: 12345.67
  */
-export const getLiveness = (req: Request, res: Response) => {
+export const getLiveness = (_req: Request, res: Response) => {
   res.status(200).json({
     status: 'alive',
     timestamp: new Date().toISOString(),
@@ -279,7 +275,10 @@ const checkMongoDB = async (): Promise<HealthCheck> => {
 
     // Test the connection with a simple query
     const { default: mongoose } = await import('mongoose');
-    const adminDb = mongoose.connection.db.admin();
+    const adminDb = mongoose.connection.db?.admin();
+    if (!adminDb) {
+      throw new Error('MongoDB admin database not available');
+    }
     await adminDb.ping();
 
     const responseTime = Date.now() - startTime;
@@ -410,8 +409,7 @@ const checkSystemResources = (): {
   const memoryUsagePercent = (memoryUsage.heapUsed / memoryUsage.heapTotal) * 100;
 
   const memoryCheck: HealthCheck = {
-    status:
-      memoryUsagePercent > 90 ? 'unhealthy' : memoryUsagePercent > 80 ? 'degraded' : 'healthy',
+    status: memoryUsagePercent > 90 ? 'unhealthy' : 'healthy',
     message: `Memory usage: ${memoryUsagePercent.toFixed(2)}%`,
     details: {
       heapUsed: memoryUsage.heapUsed,

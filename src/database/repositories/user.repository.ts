@@ -25,8 +25,12 @@ export class UserRepository {
 
       return {
         id: user.id,
-        name: user.name,
+        name: `${user.firstName} ${user.lastName}`,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
+        avatar: user.avatar,
+        emailVerified: user.emailVerified,
       };
     } catch (error) {
       throw new ApiError(500, 'Database error while finding user');
@@ -47,8 +51,12 @@ export class UserRepository {
 
       return {
         id: user.id,
-        name: user.name,
+        name: `${user.firstName} ${user.lastName}`,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
+        avatar: user.avatar,
+        emailVerified: user.emailVerified,
       };
     } catch (error) {
       throw new ApiError(500, 'Database error while finding user by email');
@@ -75,7 +83,8 @@ export class UserRepository {
    * @returns Promise<UserPublicData>
    */
   async create(userData: {
-    name: string;
+    firstName: string;
+    lastName: string;
     email: string;
     password: string;
   }): Promise<UserPublicData> {
@@ -84,8 +93,12 @@ export class UserRepository {
 
       return {
         id: newUser.id,
-        name: newUser.name,
+        name: `${newUser.firstName} ${newUser.lastName}`,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
         email: newUser.email,
+        avatar: newUser.avatar,
+        emailVerified: newUser.emailVerified,
       };
     } catch (error: any) {
       if (error.code === 11000) {
@@ -104,7 +117,7 @@ export class UserRepository {
    */
   async updateById(
     id: string,
-    updateData: Partial<{ name: string; email: string }>
+    updateData: Partial<{ firstName: string; lastName: string; email: string }>
   ): Promise<UserPublicData | null> {
     try {
       const updatedUser = await UserModel.findByIdAndUpdate(id, updateData, {
@@ -118,8 +131,12 @@ export class UserRepository {
 
       return {
         id: updatedUser.id,
-        name: updatedUser.name,
+        name: `${updatedUser.firstName} ${updatedUser.lastName}`,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
         email: updatedUser.email,
+        avatar: updatedUser.avatar,
+        emailVerified: updatedUser.emailVerified,
       };
     } catch (error: any) {
       if (error.code === 11000) {
@@ -161,8 +178,12 @@ export class UserRepository {
 
       const userPublicData = users.map((user) => ({
         id: user.id,
-        name: user.name,
+        name: `${user.firstName} ${user.lastName}`,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
+        avatar: user.avatar,
+        emailVerified: user.emailVerified,
       }));
 
       return {

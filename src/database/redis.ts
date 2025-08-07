@@ -11,10 +11,20 @@ let redisClient: RedisClientType;
 
 // Implement singleton pattern for Redis client
 if (process.env.NODE_ENV === 'production') {
-  redisClient = createClient({ url: config.redis.url });
+  redisClient = createClient({
+    socket: {
+      host: config.redis.host,
+      port: config.redis.port,
+    },
+  });
 } else {
   if (!globalForRedis.redisClient) {
-    globalForRedis.redisClient = createClient({ url: config.redis.url });
+    globalForRedis.redisClient = createClient({
+      socket: {
+        host: config.redis.host,
+        port: config.redis.port,
+      },
+    });
   }
   redisClient = globalForRedis.redisClient;
 }
@@ -29,7 +39,7 @@ redisClient.on('ready', () => {
 });
 
 redisClient.on('error', (err) => {
-  logger.error('Redis client error:', err);
+  logger.error({ err }, 'Redis client error');
 });
 
 redisClient.on('end', () => {
@@ -53,7 +63,7 @@ export const connectRedis = async (): Promise<void> => {
     await redisClient.connect();
     logger.info('Successfully connected to Redis');
   } catch (error) {
-    logger.error('Failed to connect to Redis:', error);
+    logger.error({ error }, 'Failed to connect to Redis');
     throw error;
   }
 };
@@ -69,7 +79,7 @@ export const checkRedisHealth = async (): Promise<boolean> => {
     }
     return false;
   } catch (error) {
-    logger.error('Redis health check failed:', error);
+    logger.error({ error }, 'Redis health check failed');
     return false;
   }
 };
@@ -84,7 +94,7 @@ export const closeRedis = async (): Promise<void> => {
       logger.info('Redis connection closed gracefully');
     }
   } catch (error) {
-    logger.error('Error closing Redis connection:', error);
+    logger.error({ error }, 'Error closing Redis connection');
   }
 };
 

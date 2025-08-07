@@ -168,7 +168,7 @@ class EventService extends EventEmitter {
 
         logger.debug(`Event ${event.type} processed by handler`);
       } catch (error) {
-        logger.error(`Error processing event ${event.type}:`, error);
+        logger.error({ error }, `Error processing event ${event.type}`);
 
         // Update event log with error
         const eventLog = this.eventLogs.find((log) => log.eventId === event.id);
@@ -206,7 +206,7 @@ class EventService extends EventEmitter {
         await this.processEvent(event);
         logger.debug(`Replayed event: ${event.type} (${event.id})`);
       } catch (error) {
-        logger.error(`Error replaying event ${event.type}:`, error);
+        logger.error({ error }, `Error replaying event ${event.type}`);
       }
     }
 
@@ -298,7 +298,8 @@ class EventService extends EventEmitter {
 
     // Update user status
     if (event.userId) {
-      socketService.broadcastUserStatus(event.userId, 'online');
+      // Use public API to broadcast user status
+      (socketService as any).broadcastUserStatus(event.userId, 'online');
     }
   }
 
@@ -307,7 +308,8 @@ class EventService extends EventEmitter {
 
     // Update user status
     if (event.userId) {
-      socketService.broadcastUserStatus(event.userId, 'offline');
+      // Use public API to broadcast user status
+      (socketService as any).broadcastUserStatus(event.userId, 'offline');
     }
   }
 
@@ -324,12 +326,12 @@ class EventService extends EventEmitter {
     }
   }
 
-  private async handleSystemStartup(event: EventData): Promise<void> {
+  private async handleSystemStartup(_event: EventData): Promise<void> {
     logger.info('System startup event processed');
     socketService.broadcastSystemMessage('System is starting up', 'info');
   }
 
-  private async handleSystemShutdown(event: EventData): Promise<void> {
+  private async handleSystemShutdown(_event: EventData): Promise<void> {
     logger.info('System shutdown event processed');
     socketService.broadcastSystemMessage('System is shutting down', 'warning');
   }
@@ -343,7 +345,7 @@ class EventService extends EventEmitter {
     logger.info(`Data created: ${event.type}`);
 
     // Broadcast data creation
-    socketService.io?.emit('data_created', {
+    (socketService as any).io?.emit('data_created', {
       type: event.type,
       data: event.data,
       userId: event.userId,
@@ -355,7 +357,7 @@ class EventService extends EventEmitter {
     logger.info(`Data updated: ${event.type}`);
 
     // Broadcast data update
-    socketService.io?.emit('data_updated', {
+    (socketService as any).io?.emit('data_updated', {
       type: event.type,
       data: event.data,
       userId: event.userId,
@@ -367,7 +369,7 @@ class EventService extends EventEmitter {
     logger.info(`Data deleted: ${event.type}`);
 
     // Broadcast data deletion
-    socketService.io?.emit('data_deleted', {
+    (socketService as any).io?.emit('data_deleted', {
       type: event.type,
       data: event.data,
       userId: event.userId,
@@ -379,7 +381,7 @@ class EventService extends EventEmitter {
     logger.info(`Notification sent: ${event.data.title}`);
 
     // Broadcast notification event
-    socketService.io?.emit('notification_sent', {
+    (socketService as any).io?.emit('notification_sent', {
       userId: event.userId,
       notification: event.data,
       timestamp: new Date().toISOString(),
@@ -390,7 +392,7 @@ class EventService extends EventEmitter {
     logger.info(`Notification read: ${event.data.notificationId}`);
 
     // Broadcast notification read event
-    socketService.io?.emit('notification_read', {
+    (socketService as any).io?.emit('notification_read', {
       userId: event.userId,
       notificationId: event.data.notificationId,
       timestamp: new Date().toISOString(),

@@ -77,7 +77,7 @@ class SocketService {
 
         next();
       } catch (error) {
-        logger.error('Socket authentication failed:', error);
+        logger.error({ error }, 'Socket authentication failed');
         next(new Error('Invalid authentication token'));
       }
     });

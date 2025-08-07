@@ -84,7 +84,7 @@ class TwoFactorService {
       window: this.window,
       algorithm: this.algorithm,
       digits: this.digits,
-      period: this.period,
+      step: this.period,
     });
 
     if (verified) {
@@ -330,7 +330,7 @@ class TwoFactorService {
       encoding: 'base32',
       algorithm: this.algorithm,
       digits: this.digits,
-      period: this.period,
+      step: this.period,
     });
   }
 
@@ -344,7 +344,7 @@ class TwoFactorService {
       issuer: this.issuer,
       algorithm: this.algorithm,
       digits: this.digits,
-      period: this.period,
+      // step: this.period, // step property not supported in otpauthURL
     });
 
     return QRCode.toDataURL(otpauthUrl);

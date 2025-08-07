@@ -26,7 +26,8 @@ interface ServiceResponse {
 
 class ApiGatewayService {
   private routes: Map<string, RouteConfig> = new Map();
-  private circuitBreakers: Map<string, any> = new Map();
+  // Circuit breakers functionality can be implemented later
+  // private circuitBreakers: Map<string, any> = new Map();
   private requestCounters: Map<string, number> = new Map();
 
   constructor() {
@@ -127,7 +128,7 @@ class ApiGatewayService {
     try {
       // Check rate limiting
       if (!this.checkRateLimit(routeConfig)) {
-        return res.status(429).json({
+        res.status(429).json({
           status: 'error',
           statusCode: 429,
           message: 'Rate limit exceeded',
@@ -136,7 +137,7 @@ class ApiGatewayService {
 
       // Authenticate request if required
       if (routeConfig.auth && !this.authenticateRequest(req)) {
-        return res.status(401).json({
+        res.status(401).json({
           status: 'error',
           statusCode: 401,
           message: 'Authentication required',
@@ -147,11 +148,12 @@ class ApiGatewayService {
       const serviceEndpoint = serviceDiscoveryService.getServiceEndpoint(routeConfig.service);
 
       if (!serviceEndpoint) {
-        return res.status(503).json({
+        res.status(503).json({
           status: 'error',
           statusCode: 503,
           message: 'Service unavailable',
         });
+        return;
       }
 
       // Forward request to service
@@ -180,7 +182,7 @@ class ApiGatewayService {
         statusCode: response.status,
       });
     } catch (error) {
-      logger.error('API Gateway error:', error);
+      logger.error({ error }, 'API Gateway error');
 
       res.status(500).json({
         status: 'error',
@@ -317,7 +319,7 @@ class ApiGatewayService {
   /**
    * Transform response
    */
-  private transformResponse(response: ServiceResponse, routeConfig: RouteConfig): ServiceResponse {
+  private transformResponse(response: ServiceResponse, _routeConfig: RouteConfig): ServiceResponse {
     // Add gateway metadata
     const transformedData = {
       ...response.data,
@@ -337,11 +339,11 @@ class ApiGatewayService {
   /**
    * Log request
    */
-  private logRequest(req: Request, response: ServiceResponse, routeConfig: RouteConfig): void {
-    logger.info('API Gateway request', {
+  private logRequest(req: Request, response: ServiceResponse, _routeConfig: RouteConfig): void {
+    logger.info({
       method: req.method,
       path: req.path,
-      service: routeConfig.service,
+      service: response.service,
       statusCode: response.status,
       responseTime: response.responseTime,
       userAgent: req.get('User-Agent'),
