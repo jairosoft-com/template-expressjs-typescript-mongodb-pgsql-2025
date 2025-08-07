@@ -5,8 +5,8 @@ import { Strategy as FacebookStrategy } from 'passport-facebook';
 import { Strategy as LocalStrategy } from 'passport-local';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import logger from '../utils/logger';
-import config from '../config';
+import logger from '@common/utils/logger';
+import config from '@/config';
 import { UserModel } from '../database/models/user.model';
 import { eventService } from './event.service';
 

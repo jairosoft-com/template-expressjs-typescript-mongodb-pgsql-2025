@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import logger from '../utils/logger';
+import logger from '@common/utils/logger';
 import { eventService } from './event.service';
 
 interface ServiceInfo {

@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
-import config from '../config';
-import logger from '../utils/logger';
+import config from '@/config';
+import logger from '@common/utils/logger';
 
 // Global variable to store the connection (singleton pattern)
 const globalForMongo = global as unknown as { mongoConnection: typeof mongoose | undefined };

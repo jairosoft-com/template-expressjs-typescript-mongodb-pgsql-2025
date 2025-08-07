@@ -1,8 +1,8 @@
 import { Server as SocketIOServer } from 'socket.io';
 import { Server as HTTPServer } from 'http';
 import jwt from 'jsonwebtoken';
-import logger from '../utils/logger';
-import config from '../config';
+import logger from '@common/utils/logger';
+import config from '@/config';
 
 interface SocketUser {
   userId: string;

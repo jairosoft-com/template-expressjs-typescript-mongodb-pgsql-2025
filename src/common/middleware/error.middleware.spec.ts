@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { errorMiddleware } from './error.middleware';
-import { ApiError } from '../utils/ApiError';
+import { ApiError } from '@common/utils/ApiError';
 
 // Mock logger
-jest.mock('../utils/logger', () => ({
+jest.mock('@common/utils/logger', () => ({
   error: jest.fn(),
   info: jest.fn(),
   warn: jest.fn(),
@@ -12,7 +12,7 @@ jest.mock('../utils/logger', () => ({
 }));
 
 // Mock config
-jest.mock('../config', () => ({
+jest.mock('@/config', () => ({
   nodeEnv: 'test'
 }));
 

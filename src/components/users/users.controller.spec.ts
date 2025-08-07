@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
-import * as userService from './user.service';
-import { registerUser, loginUser } from './user.controller';
-import { ApiError } from '../../utils/ApiError';
+import * as userService from './users.service';
+import { registerUser, loginUser } from './users.controller';
+import { ApiError } from '@common/utils/ApiError';
 
 // Mock config before importing anything that uses it
-jest.mock('../../config', () => ({
+jest.mock('@/config', () => ({
   jwt: {
     secret: 'test-secret-key-that-is-at-least-32-characters-long',
     expiresIn: '1d'
@@ -14,7 +14,7 @@ jest.mock('../../config', () => ({
 }));
 
 // Mock the user service
-jest.mock('./user.service');
+jest.mock('./users.service');
 
 const mockUserService = userService as jest.Mocked<typeof userService>;
 

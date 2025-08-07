@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import redisClient from '../database/redis';
-import logger from '../utils/logger';
+import redisClient from '@/database/redis';
+import logger from '@common/utils/logger';
 
 /**
  * Redis Caching Middleware

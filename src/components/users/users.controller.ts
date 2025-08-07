@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import * as service from './user.service';
-import { UserRegistrationSchema, UserLoginSchema } from './user.validation';
+import * as service from './users.service';
+import { UserRegistrationSchema, UserLoginSchema } from './users.validation';
 
 /**
  * @swagger
