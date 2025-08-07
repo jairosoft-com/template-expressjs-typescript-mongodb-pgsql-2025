@@ -3,8 +3,8 @@ import QRCode from 'qrcode';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import logger from '../common/utils/logger';
-import config from '../config';
+import logger from '@common/utils/logger';
+import config from '@/config';
 import { UserModel } from '../database/models/user.model';
 import { eventService } from './event.service';
 

@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
-import { connectPostgres, closePostgres } from '../../database/postgres';
-import { connectMongo, closeMongo } from '../../database/mongo';
-import { connectRedis, closeRedis } from '../../database/redis';
-import logger from '../../common/utils/logger';
-import config from '../../config';
+import { connectPostgres, closePostgres } from '@/database/postgres';
+import { connectMongo, closeMongo } from '@/database/mongo';
+import { connectRedis, closeRedis } from '@/database/redis';
+import logger from '@common/utils/logger';
+import config from '@/config';
 
 interface HealthStatus {
   status: 'healthy' | 'unhealthy' | 'degraded';

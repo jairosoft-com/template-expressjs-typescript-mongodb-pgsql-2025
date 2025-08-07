@@ -2,28 +2,28 @@ import express, { Express, Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
-import config from './config';
-import logger from './common/utils/logger';
-import { connectPostgres, closePostgres } from './database/postgres';
-import { connectMongo, closeMongo } from './database/mongo';
-import { connectRedis, closeRedis } from './database/redis';
-import { errorMiddleware } from './common/middleware/error.middleware';
-import { ApiError } from './common/utils/ApiError';
-import userRouter from './components/users/users.routes';
-import healthRouter from './components/health/health.routes';
-import { setupSwagger } from './config/swagger';
-import { requestLogger, responseLogger, errorLogger, performanceMonitor } from './common/middleware/logging.middleware';
+import config from '@/config';
+import logger from '@common/utils/logger';
+import { connectPostgres, closePostgres } from '@/database/postgres';
+import { connectMongo, closeMongo } from '@/database/mongo';
+import { connectRedis, closeRedis } from '@/database/redis';
+import { errorMiddleware } from '@common/middleware/error.middleware';
+import { ApiError } from '@common/utils/ApiError';
+import userRouter from '@components/users/users.routes';
+import healthRouter from '@components/health/health.routes';
+import { setupSwagger } from '@/config/swagger';
+import { requestLogger, responseLogger, errorLogger, performanceMonitor } from '@common/middleware/logging.middleware';
 
 // Phase 5: Real-time Features
-import { socketService } from './services/socket.service';
-import { eventService } from './services/event.service';
+import { socketService } from '@/services/socket.service';
+import { eventService } from '@/services/event.service';
 
 // Phase 5: Advanced Security
-import { oauthService } from './services/oauth.service';
+import { oauthService } from '@/services/oauth.service';
 
 // Phase 5: Microservices Architecture
-import { serviceDiscoveryService } from './services/service-discovery.service';
-import { apiGatewayService } from './services/api-gateway.service';
+import { serviceDiscoveryService } from '@/services/service-discovery.service';
+import { apiGatewayService } from '@/services/api-gateway.service';
 
 const app: Express = express();
 

@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import logger from '../common/utils/logger';
+import logger from '@common/utils/logger';
 import { socketService } from './socket.service';
 
 interface EventData {

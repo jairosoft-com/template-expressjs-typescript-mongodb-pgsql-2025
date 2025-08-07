@@ -1,15 +1,15 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { registerNewUser, loginUser, getUserById, updateUserById, deleteUserById, getAllUsers } from './users.service';
-import { userRepository } from '../../database/repositories/user.repository';
-import { ApiError } from '../../common/utils/ApiError';
-import config from '../../config';
+import { userRepository } from '@/database/repositories/user.repository';
+import { ApiError } from '@common/utils/ApiError';
+import config from '@/config';
 
 // Mock dependencies
-jest.mock('../../database/repositories/user.repository');
+jest.mock('@/database/repositories/user.repository');
 jest.mock('bcryptjs');
 jest.mock('jsonwebtoken');
-jest.mock('../../config', () => ({
+jest.mock('@/config', () => ({
   jwt: {
     secret: 'test-secret-key-that-is-at-least-32-characters-long',
     expiresIn: '1d'

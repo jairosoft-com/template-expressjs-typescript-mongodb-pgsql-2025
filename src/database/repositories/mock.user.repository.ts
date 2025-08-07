@@ -1,4 +1,4 @@
-import { UserPublicData } from '../../components/users/users.types';
+import { UserPublicData } from '@components/users/users.types';
 
 // In-memory storage for testing
 const users = new Map<string, any>();
