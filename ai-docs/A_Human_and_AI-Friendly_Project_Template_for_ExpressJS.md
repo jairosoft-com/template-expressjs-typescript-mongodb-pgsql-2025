@@ -10,15 +10,11 @@ The foundation of any modern, cloud-native application is a strict adherence to 
 
 Several factors are particularly critical for this microservice template and are implemented without compromise:
 
-* **III. Config:** All configuration, including database connection strings, API keys, port numbers, and other environment-specific values, must be stored in the environment. Configuration must never be hardcoded or committed to the codebase. This practice is fundamental for security and portability, allowing the same application image to be deployed across different environments (development, staging, production) without code changes. For local development, this template utilizes a  
-   `.env` file loaded by the `dotenv` library. In production, the execution environment (e.g., a container orchestrator like Kubernetes or a PaaS like Heroku) is responsible for injecting these variables.  
-* **II. Dependencies:** The application must explicitly declare all its dependencies and never rely on system-wide packages. This is managed through the  
-   `package.json` file. Furthermore, the `package-lock.json` file must be committed to the version control system to ensure that builds are deterministic and repeatable, guaranteeing that every developer and build server installs the exact same version of every dependency.  
-* **XI. Logs:** Logs are treated as event streams and are never written to files within the application container. Instead, all log output is directed to  
-   `stdout` as a stream of structured, timestamped events (preferably in JSON format). This decouples the application from the concerns of log routing, storage, and analysis. The execution environment is responsible for capturing this stream and forwarding it to a centralized logging platform (e.g., ELK Stack, Splunk, Datadog). This approach simplifies the application code and enhances observability in a distributed system.  
-* **VII. Port Binding:** The microservice is entirely self-contained and exports its HTTP service by binding to a port. This port is specified via an environment variable (e.g.,  
-   `PORT`), making the service portable and executable in any environment without reliance on a specific web server injection at runtime.  
-* **VI. Processes:** The application must be executed as one or more stateless processes. Any data that needs to persist must be stored in a stateful backing service, such as a database, object store, or cache. This "share-nothing" architecture is a prerequisite for horizontal scalability, as any instance of the service can handle any request, allowing for seamless scaling and fault tolerance.
+* **I. Config:** All configuration, including database connection strings, API keys, port numbers, and other environment-specific values, must be stored in the environment. Configuration must never be hardcoded or committed to the codebase. This practice is fundamental for security and portability, allowing the same application image to be deployed across different environments (development, staging, production) without code changes. For local development, this template utilizes a `.env` file loaded by the `dotenv` library. In production, the execution environment (e.g., a container orchestrator like Kubernetes or a PaaS like Heroku) is responsible for injecting these variables.  
+* **II. Dependencies:** The application must explicitly declare all its dependencies and never rely on system-wide packages. This is managed through the `package.json` file. Furthermore, the `package-lock.json` file must be committed to the version control system to ensure that builds are deterministic and repeatable, guaranteeing that every developer and build server installs the exact same version of every dependency.  
+* **III. Logs:** Logs are treated as event streams and are never written to files within the application container. Instead, all log output is directed to `stdout` as a stream of structured, timestamped events (preferably in JSON format). This decouples the application from the concerns of log routing, storage, and analysis. The execution environment is responsible for capturing this stream and forwarding it to a centralized logging platform (e.g., ELK Stack, Splunk, Datadog). This approach simplifies the application code and enhances observability in a distributed system.  
+* **VI. Port Binding:** The microservice is entirely self-contained and exports its HTTP service by binding to a port. This port is specified via an environment variable (e.g., `PORT`), making the service portable and executable in any environment without reliance on a specific web server injection at runtime.  
+* **V. Processes:** The application must be executed as one or more stateless processes. Any data that needs to persist must be stored in a stateful backing service, such as a database, object store, or cache. This "share-nothing" architecture is a prerequisite for horizontal scalability, as any instance of the service can handle any request, allowing for seamless scaling and fault tolerance.
 
 Adherence to these principles provides a clear and predictable "API" for interaction with the application's environment. For an AI coding assistant, which is trained on vast quantities of public codebases that follow these established patterns, this predictability is invaluable. When an AI encounters a codebase that retrieves configuration strictly from `process.env` (Factor III), it understands this contract and will generate new code that follows the same pattern. It will not attempt to hardcode values or read from a configuration file. In this way, the Twelve-Factor App methodology transcends being a mere set of best practices for human developers; it becomes a crucial component in making the codebase intelligible and safely extensible for AI partners by defining the "rules of the game."
 
@@ -26,9 +22,7 @@ Adherence to these principles provides a clear and predictable "API" for interac
 
 While a traditional layered architecture—separating code into directories like `/controllers`, `/services`, and `/models`—is a common starting point for many Node.js applications, it has significant drawbacks for building scalable microservices. This approach organizes code by its technical function, not its business purpose. As an application grows, the logic for a single business feature becomes scattered across multiple top-level directories, leading to high coupling between layers and low cohesion within features. This makes it difficult to understand the scope of a feature, test it in isolation, or, most importantly, extract it into a separate microservice without extensive and costly refactoring.
 
-To overcome these limitations, this template adopts a **component-driven architecture**, also known as structuring by business capability or "feature-slicing". The core application logic resides within a
-
-`/src/components` directory. Each subdirectory within `/components` represents a self-contained business domain, or "bounded context," such as `/users` or `/orders`.
+To overcome these limitations, this template adopts a **component-driven architecture**, also known as structuring by business capability or "feature-slicing". The core application logic resides within a `/src/components` directory. Each subdirectory within `/components` represents a self-contained business domain, or "bounded context," such as `/users` or `/orders`.
 
 The benefits of this approach are substantial:
 
@@ -137,8 +131,7 @@ The root of the project contains configuration files that define the project's e
 * `package.json`: This file is the manifest for the Node.js project. It contains:  
   * **Metadata:** Project name, version, description, and license.  
   * **Dependencies:** The `dependencies` section lists packages required for the application to run in production (e.g., `express`, `pino`, `helmet`). The `devDependencies` section lists packages used only for development and testing (e.g., `typescript`, `jest`, `nodemon`).  
-  * **Scripts:** A standardized set of `npm` scripts provides a consistent interface for common development tasks, such as starting the server, running tests, and linting the code. This is crucial for automation and ease of use for all developers. Example scripts include  
-     `start`, `dev`, `test`, `lint`, and `build`.  
+  * **Scripts:** A standardized set of `npm` scripts provides a consistent interface for common development tasks, such as starting the server, running tests, and linting the code. This is crucial for automation and ease of use for all developers. Example scripts include `start`, `dev`, `test`, `lint`, and `build`.  
 * `tsconfig.json`: This file configures the TypeScript compiler (`tsc`). Key settings for a modern Node.js project include:  
   * `"target": "ES2022"`: Compiles to a modern version of JavaScript to leverage recent language features.  
   * `"module": "ESNext"` and `"moduleResolution": "Node"`: Enables the use of native ECMAScript Modules (ESM), which is the modern standard for JavaScript modules.  
@@ -181,9 +174,7 @@ The top level of the `/src` directory contains the main application bootstrappin
 
 ### **2.5 The `/config` Directory: Centralized and Environment-Aware Configuration**
 
-To comply with the Twelve-Factor App principles, configuration must be strictly separated from code. The
-
-`/config` directory centralizes the logic for loading, validating, and exporting all configuration variables from the environment, ensuring the application is portable and secure.
+To comply with the Twelve-Factor App principles, configuration must be strictly separated from code. The `/config` directory centralizes the logic for loading, validating, and exporting all configuration variables from the environment, ensuring the application is portable and secure.
 
 * **`config/index.ts`:** This is the sole file in the directory and acts as the single source of truth for all configuration.  
   * It uses `dotenv` to load the `.env` file during local development. This call should be one of the first lines of code executed.  
@@ -195,7 +186,7 @@ To comply with the Twelve-Factor App principles, configuration must be strictly 
   * It configures logging options for development and production environments.  
   * It handles graceful shutdown by properly disconnecting the client when the application terminates.
 
-TypeScript  
+```typescript  
 // src/config/index.ts  
 import dotenv from 'dotenv';
 
@@ -233,7 +224,7 @@ const prisma = new PrismaClient({
 });
 
 export default prisma;
-\`\`\`
+```
 
 ### **2.6 The `/components` Directory: The Heart of the Service**
 
@@ -412,8 +403,6 @@ This template achieves consistency through a combination of powerful, industry-s
 
 * **ESLint:** A highly pluggable static analysis tool (linter) for identifying and fixing problematic patterns in JavaScript and TypeScript code. The configuration will include recommended rule sets like `eslint:recommended` and `@typescript-eslint/recommended` to catch common bugs, enforce best practices (e.g., disallowing unused variables), and improve code quality.  
 * **Prettier:** An opinionated code formatter that enforces a consistent style by parsing code and re-printing it with its own rules. It eliminates all arguments about style by taking formatting decisions out of the developer's hands. Prettier will be configured to work alongside ESLint, where Prettier handles all formatting rules, and ESLint focuses on code-quality rules.  
-* **JavaScript Standard Style (`standard`):** As an alternative to a manual ESLint and Prettier setup, this template strongly recommends using **JavaScript Standard Style**. It is a linter, formatter, and style guide all in one, with a key advantage: it is "zero-configuration". This simplicity is exceptionally AI-friendly. Complex, project-specific ESLint configurations create a nuanced set of rules that an AI might struggle to adhere to perfectly. In contrast,  
-   `standard` provides a single, non-negotiable set of rules for the entire project. When an AI generates code, a simple, deterministic command (`standard --fix`) can bring the new code into perfect compliance. This simplifies the feedback loop for AI-generated code, making it a strategic choice to improve the success rate of AI-assisted development.  
 * **EditorConfig:** An `.editorconfig` file will be included at the root to help maintain consistent coding styles (like indentation and line endings) across various editors and IDEs.
 
 ### **3.2 Automated Quality Gates: Pre-commit Hooks with Husky and lint-staged**
@@ -473,7 +462,7 @@ In a distributed microservices architecture, individual services must be designe
 
 Effective logging is the cornerstone of observability. In a microservices environment, where requests may traverse multiple services, logs are the primary tool for debugging, monitoring, and tracing application behavior. To be effective, logs must be structured (machine-readable) and logging itself must not become a performance bottleneck.
 
-* **Tool Selection:** This template recommends and implements **Pino** as the default logging library. While other libraries like Winston are highly capable, Pino is specifically optimized for speed and low overhead, making it an ideal choice for high-throughput microservices where performance is critical. It produces structured JSON logs by default, which is the preferred format for modern log aggregation and analysis platforms.  
+* **Tool Selection:** This template recommends and implements **Pino** as the default logging library. Pino is specifically optimized for speed and low overhead, making it an ideal choice for high-throughput microservices where performance is critical. It produces structured JSON logs by default, which is the preferred format for modern log aggregation and analysis platforms.  
 * **Implementation Strategy:**  
   * **Centralized Configuration:** A logger instance is configured in a dedicated file (e.g., `/config/logger.ts`). This configuration sets the log level based on the environment (e.g., `info` in production, `debug` in development) and configures log redaction.  
   * **Request Correlation:** A lightweight middleware is used to inject the logger instance into every request object (`req.log`). This middleware also generates a unique `requestId` for each incoming request, which is then included in every log message generated during the lifecycle of that request. This allows for easy filtering and tracing of all log entries related to a single API call.  
@@ -655,11 +644,11 @@ This service is configured using environment variables. The following variables 
 Contributions are welcome\! Please follow the guidelines below.
 
 1. **Create a new branch** for your feature or bugfix.  
-2. **Add a new component:** To add a new feature, create a new directory under `/src/components`. This directory **must** contain the following files, following the pattern of existing components:  
-   * `[componentName].routes.ts`  
-   * `[componentName].controller.ts`  
-   * `[componentName].service.ts`  
-   * `[componentName].test.ts`  
+2. **Add a new component:** To add a new feature, create a new directory under `/src/components`. This directory **must** contain the following files and the components should be in plural form, following the pattern of existing components:  
+   * `[componentName]s.routes.ts`  
+   * `[componentName]s.controller.ts`  
+   * `[componentName]s.service.ts`  
+   * `[componentName]s.test.ts`  
 3. **Write tests** for your changes. Ensure all tests pass by running `npm test`.  
 4. **Ensure code style** is consistent by running the linter. The pre-commit hook will handle this automatically.  
 5. **Submit a pull request** to the `main` branch.
