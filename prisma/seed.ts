@@ -1,10 +1,22 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { SECURITY } from '../src/common/constants/security.constants';
 
 const prisma = new PrismaClient();
 
+// WARNING: These passwords are for development/testing ONLY
+// NEVER use these passwords in production environments
+const SEED_PASSWORDS = {
+  admin: process.env.SEED_ADMIN_PASSWORD || 'Admin123!',
+  user: process.env.SEED_USER_PASSWORD || 'User123!',
+  unverified: process.env.SEED_UNVERIFIED_PASSWORD || 'Test123!',
+  oauth: process.env.SEED_OAUTH_PASSWORD || 'OAuth123!',
+  twoFactor: process.env.SEED_2FA_PASSWORD || '2FA123!',
+};
+
 async function main() {
   console.log('🌱 Starting database seed...');
+  console.log('⚠️  Using development passwords - DO NOT use in production!');
 
   // Clean existing data
   await prisma.backupCode.deleteMany();
@@ -80,7 +92,7 @@ async function main() {
     prisma.user.create({
       data: {
         email: 'admin@example.com',
-        password: await bcrypt.hash('Admin123!', 10),
+        password: await bcrypt.hash(SEED_PASSWORDS.admin, SECURITY.PASSWORD.SALT_ROUNDS),
         firstName: 'Admin',
         lastName: 'User',
         emailVerified: true,
@@ -96,7 +108,7 @@ async function main() {
     prisma.user.create({
       data: {
         email: 'user@example.com',
-        password: await bcrypt.hash('User123!', 10),
+        password: await bcrypt.hash(SEED_PASSWORDS.user, SECURITY.PASSWORD.SALT_ROUNDS),
         firstName: 'John',
         lastName: 'Doe',
         emailVerified: true,
@@ -112,7 +124,7 @@ async function main() {
     prisma.user.create({
       data: {
         email: 'unverified@example.com',
-        password: await bcrypt.hash('Test123!', 10),
+        password: await bcrypt.hash(SEED_PASSWORDS.unverified, SECURITY.PASSWORD.SALT_ROUNDS),
         firstName: 'Jane',
         lastName: 'Smith',
         emailVerified: false,
@@ -128,7 +140,7 @@ async function main() {
     prisma.user.create({
       data: {
         email: 'oauth@example.com',
-        password: await bcrypt.hash('OAuth123!', 10),
+        password: await bcrypt.hash(SEED_PASSWORDS.oauth, SECURITY.PASSWORD.SALT_ROUNDS),
         firstName: 'OAuth',
         lastName: 'User',
         emailVerified: true,
@@ -146,7 +158,7 @@ async function main() {
     prisma.user.create({
       data: {
         email: '2fa@example.com',
-        password: await bcrypt.hash('2FA123!', 10),
+        password: await bcrypt.hash(SEED_PASSWORDS.twoFactor, SECURITY.PASSWORD.SALT_ROUNDS),
         firstName: 'TwoFA',
         lastName: 'User',
         emailVerified: true,
@@ -176,13 +188,24 @@ async function main() {
   // Display created users
   console.log('\n📝 Test Users Created:');
   console.log('========================');
-  users.forEach((user) => {
-    console.log(`Email: ${user.email}`);
-    console.log(`Password: See seed file for passwords`);
-    console.log('------------------------');
-  });
+  console.log('Email: admin@example.com');
+  console.log(`Password: ${SEED_PASSWORDS.admin}`);
+  console.log('------------------------');
+  console.log('Email: user@example.com');
+  console.log(`Password: ${SEED_PASSWORDS.user}`);
+  console.log('------------------------');
+  console.log('Email: unverified@example.com');
+  console.log(`Password: ${SEED_PASSWORDS.unverified}`);
+  console.log('------------------------');
+  console.log('Email: oauth@example.com');
+  console.log(`Password: ${SEED_PASSWORDS.oauth}`);
+  console.log('------------------------');
+  console.log('Email: 2fa@example.com');
+  console.log(`Password: ${SEED_PASSWORDS.twoFactor}`);
+  console.log('------------------------');
 
-  console.log('\n🎉 Database seed completed successfully!');
+  console.log('\n⚠️  Remember: These are development passwords only!');
+  console.log('🎉 Database seed completed successfully!');
 }
 
 main()

@@ -4,6 +4,7 @@ import { UserRegistrationInput, UserPublicData } from './users.types';
 import { ApiError } from '@common/utils/ApiError';
 import { BaseService } from '@common/base/BaseService';
 import config from '@/config';
+import { parseFullName } from '@common/utils/name.utils';
 
 // Import both repositories for migration phase
 import { userRepository as prismaUserRepository } from '@/repositories/user.repository';
@@ -101,11 +102,23 @@ export class UserService extends BaseService {
     }
 
     // Prepare user public data
+    let firstName: string;
+    let lastName: string;
+    
+    if (USE_PRISMA) {
+      firstName = user.firstName;
+      lastName = user.lastName;
+    } else {
+      const parsed = parseFullName(user.name);
+      firstName = parsed.firstName;
+      lastName = parsed.lastName;
+    }
+    
     const userPublicData: UserPublicData = {
       id: user.id,
       email: user.email,
-      firstName: USE_PRISMA ? user.firstName : user.name?.split(' ')[0] || '',
-      lastName: USE_PRISMA ? user.lastName : user.name?.split(' ')[1] || '',
+      firstName,
+      lastName,
       avatar: USE_PRISMA ? user.avatar : undefined,
       emailVerified: USE_PRISMA ? user.emailVerified : false,
     };

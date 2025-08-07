@@ -1,7 +1,12 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import prisma from '@/database/prisma';
 import { createChildLogger } from '@common/utils/logger';
 import { Logger } from 'pino';
+
+// Type helper to get Prisma model delegate types
+type PrismaModelDelegate = {
+  [K in Prisma.ModelName]: (typeof prisma)[Uncapitalize<K>];
+};
 
 /**
  * Base repository class providing common database operations
@@ -10,12 +15,21 @@ import { Logger } from 'pino';
 export abstract class BaseRepository<T, CreateInput, UpdateInput> {
   protected prisma: PrismaClient;
   protected logger: Logger;
-  protected modelName: string;
+  protected modelName: Prisma.ModelName;
 
-  constructor(modelName: string) {
+  constructor(modelName: Prisma.ModelName) {
     this.prisma = prisma;
     this.modelName = modelName;
     this.logger = createChildLogger(`repository:${modelName}`);
+  }
+
+  /**
+   * Get the Prisma model delegate for this repository
+   * This provides type-safe access to Prisma model methods
+   */
+  protected get model() {
+    const modelKey = this.modelName.charAt(0).toLowerCase() + this.modelName.slice(1);
+    return (this.prisma as any)[modelKey] as PrismaModelDelegate[typeof this.modelName];
   }
 
   /**
@@ -23,10 +37,10 @@ export abstract class BaseRepository<T, CreateInput, UpdateInput> {
    */
   async findById(id: string): Promise<T | null> {
     try {
-      const result = await (this.prisma as any)[this.modelName].findUnique({
+      const result = await this.model.findUnique({
         where: { id },
       });
-      return result;
+      return result as T | null;
     } catch (error) {
       this.logger.error({ err: error, id }, `Error finding ${this.modelName} by ID`);
       throw error;
@@ -43,8 +57,8 @@ export abstract class BaseRepository<T, CreateInput, UpdateInput> {
     orderBy?: any;
   }): Promise<T[]> {
     try {
-      const result = await (this.prisma as any)[this.modelName].findMany(params);
-      return result;
+      const result = await this.model.findMany(params);
+      return result as T[];
     } catch (error) {
       this.logger.error({ err: error, params }, `Error finding ${this.modelName} records`);
       throw error;
@@ -56,7 +70,7 @@ export abstract class BaseRepository<T, CreateInput, UpdateInput> {
    */
   async count(where?: any): Promise<number> {
     try {
-      const result = await (this.prisma as any)[this.modelName].count({ where });
+      const result = await this.model.count({ where });
       return result;
     } catch (error) {
       this.logger.error({ err: error, where }, `Error counting ${this.modelName} records`);
@@ -69,9 +83,9 @@ export abstract class BaseRepository<T, CreateInput, UpdateInput> {
    */
   async create(data: CreateInput): Promise<T> {
     try {
-      const result = await (this.prisma as any)[this.modelName].create({ data });
-      this.logger.info({ id: result.id }, `${this.modelName} created`);
-      return result;
+      const result = await this.model.create({ data });
+      this.logger.info({ id: (result as any).id }, `${this.modelName} created`);
+      return result as T;
     } catch (error) {
       this.logger.error({ err: error, data }, `Error creating ${this.modelName}`);
       throw error;
@@ -83,12 +97,12 @@ export abstract class BaseRepository<T, CreateInput, UpdateInput> {
    */
   async update(id: string, data: UpdateInput): Promise<T> {
     try {
-      const result = await (this.prisma as any)[this.modelName].update({
+      const result = await this.model.update({
         where: { id },
         data,
       });
       this.logger.info({ id }, `${this.modelName} updated`);
-      return result;
+      return result as T;
     } catch (error) {
       this.logger.error({ err: error, id, data }, `Error updating ${this.modelName}`);
       throw error;
@@ -100,11 +114,11 @@ export abstract class BaseRepository<T, CreateInput, UpdateInput> {
    */
   async delete(id: string): Promise<T> {
     try {
-      const result = await (this.prisma as any)[this.modelName].delete({
+      const result = await this.model.delete({
         where: { id },
       });
       this.logger.info({ id }, `${this.modelName} deleted`);
-      return result;
+      return result as T;
     } catch (error) {
       this.logger.error({ err: error, id }, `Error deleting ${this.modelName}`);
       throw error;
@@ -116,7 +130,7 @@ export abstract class BaseRepository<T, CreateInput, UpdateInput> {
    */
   async deleteMany(where?: any): Promise<{ count: number }> {
     try {
-      const result = await (this.prisma as any)[this.modelName].deleteMany({ where });
+      const result = await this.model.deleteMany({ where });
       this.logger.info({ count: result.count }, `${this.modelName} records deleted`);
       return result;
     } catch (error) {

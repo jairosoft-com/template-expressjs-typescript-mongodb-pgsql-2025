@@ -2,6 +2,7 @@ import { User, Prisma } from '@prisma/client';
 import { BaseRepository } from './base.repository';
 import bcrypt from 'bcryptjs';
 import { ApiError } from '@common/utils/ApiError';
+import { SECURITY } from '@common/constants/security.constants';
 
 // Define types for user operations
 export type UserWithoutPassword = Omit<User, 'password'>;
@@ -22,7 +23,7 @@ export class UserRepository extends BaseRepository<
   Prisma.UserUpdateInput
 > {
   constructor() {
-    super('user');
+    super('User');
   }
 
   /**
@@ -66,10 +67,8 @@ export class UserRepository extends BaseRepository<
    */
   async createUser(data: UserCreateInput): Promise<UserPublicData> {
     try {
-      // Hash password if provided
-      if ('password' in data && data.password) {
-        data.password = await bcrypt.hash(data.password, 10);
-      }
+      // Hash password (required field)
+      data.password = await bcrypt.hash(data.password, SECURITY.PASSWORD.SALT_ROUNDS);
 
       // Ensure email is lowercase
       if (data.email) {
@@ -103,9 +102,9 @@ export class UserRepository extends BaseRepository<
    */
   async updateUser(id: string, data: UserUpdateInput): Promise<UserPublicData> {
     try {
-      // Hash password if being updated
-      if ('password' in data && data.password) {
-        data.password = await bcrypt.hash(data.password as string, 10);
+      // Hash password if being updated and has a value
+      if (typeof data.password === 'string' && data.password) {
+        data.password = await bcrypt.hash(data.password, SECURITY.PASSWORD.SALT_ROUNDS);
       }
 
       // Ensure email is lowercase if being updated
@@ -170,8 +169,8 @@ export class UserRepository extends BaseRepository<
 
       const attempts = user.loginAttempts + 1;
       const lockUntil =
-        attempts >= 5
-          ? new Date(Date.now() + 2 * 60 * 60 * 1000) // Lock for 2 hours
+        attempts >= SECURITY.LOGIN.MAX_ATTEMPTS
+          ? new Date(Date.now() + SECURITY.LOGIN.LOCK_DURATION_MS)
           : null;
 
       await this.prisma.user.update({
