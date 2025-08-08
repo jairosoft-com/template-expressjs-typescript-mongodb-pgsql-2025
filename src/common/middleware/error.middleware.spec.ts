@@ -5,15 +5,30 @@ import { ApiError } from '@common/utils/ApiError';
 
 // Mock logger
 jest.mock('@common/utils/logger', () => ({
-  error: jest.fn(),
-  info: jest.fn(),
-  warn: jest.fn(),
-  debug: jest.fn()
+  default: {
+    error: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+    fatal: jest.fn(),
+    child: jest.fn(() => ({
+      error: jest.fn(),
+      info: jest.fn(),
+      warn: jest.fn(),
+      debug: jest.fn(),
+    })),
+  },
+  createChildLogger: jest.fn(() => ({
+    error: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+  })),
 }));
 
 // Mock config
 jest.mock('@/config', () => ({
-  nodeEnv: 'test'
+  nodeEnv: 'test',
 }));
 
 describe('Error Middleware', () => {
@@ -25,11 +40,11 @@ describe('Error Middleware', () => {
     mockRequest = {
       originalUrl: '/api/v1/users/register',
       method: 'POST',
-      ip: '127.0.0.1'
+      ip: '127.0.0.1',
     };
     mockResponse = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis()
+      json: jest.fn().mockReturnThis(),
     };
     mockNext = jest.fn();
     jest.clearAllMocks();
@@ -39,36 +54,26 @@ describe('Error Middleware', () => {
     it('should handle ApiError correctly', () => {
       const apiError = new ApiError(409, 'Email already in use');
 
-      errorMiddleware(
-        apiError,
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
+      errorMiddleware(apiError, mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.status).toHaveBeenCalledWith(409);
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'error',
         statusCode: 409,
-        message: 'Email already in use'
+        message: 'Email already in use',
       });
     });
 
     it('should handle ApiError with custom status code', () => {
       const apiError = new ApiError(500, 'Internal server error');
 
-      errorMiddleware(
-        apiError,
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
+      errorMiddleware(apiError, mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.status).toHaveBeenCalledWith(500);
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'error',
         statusCode: 500,
-        message: 'Internal server error'
+        message: 'Internal server error',
       });
     });
   });
@@ -79,27 +84,22 @@ describe('Error Middleware', () => {
         {
           code: 'invalid_string',
           message: 'Invalid email',
-          path: ['body', 'email']
+          path: ['body', 'email'],
         },
         {
           code: 'too_small',
           message: 'Password must be at least 8 characters',
-          path: ['body', 'password']
-        }
+          path: ['body', 'password'],
+        },
       ]);
 
-      errorMiddleware(
-        zodError,
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
+      errorMiddleware(zodError, mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.status).toHaveBeenCalledWith(400);
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'error',
         statusCode: 400,
-        message: 'body: Invalid email, Password must be at least 8 characters'
+        message: 'body: Invalid email, Password must be at least 8 characters',
       });
     });
 
@@ -108,22 +108,17 @@ describe('Error Middleware', () => {
         {
           code: 'invalid_string',
           message: 'Invalid email',
-          path: ['body', 'email']
-        }
+          path: ['body', 'email'],
+        },
       ]);
 
-      errorMiddleware(
-        zodError,
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
+      errorMiddleware(zodError, mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.status).toHaveBeenCalledWith(400);
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'error',
         statusCode: 400,
-        message: 'body: Invalid email'
+        message: 'body: Invalid email',
       });
     });
   });
@@ -132,18 +127,13 @@ describe('Error Middleware', () => {
     it('should handle generic Error correctly', () => {
       const genericError = new Error('Database connection failed');
 
-      errorMiddleware(
-        genericError,
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
+      errorMiddleware(genericError, mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.status).toHaveBeenCalledWith(500);
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'error',
         statusCode: 500,
-        message: 'An unexpected error occurred'
+        message: 'An unexpected error occurred',
       });
     });
 
@@ -151,18 +141,13 @@ describe('Error Middleware', () => {
       const customError = new Error('Custom error message');
       customError.message = 'Custom error message';
 
-      errorMiddleware(
-        customError,
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
+      errorMiddleware(customError, mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.status).toHaveBeenCalledWith(500);
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'error',
         statusCode: 500,
-        message: 'An unexpected error occurred'
+        message: 'An unexpected error occurred',
       });
     });
   });
@@ -173,36 +158,26 @@ describe('Error Middleware', () => {
       // Instead, we'll verify the middleware handles generic errors correctly
       const genericError = new Error('Sensitive database error');
 
-      errorMiddleware(
-        genericError,
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
+      errorMiddleware(genericError, mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.status).toHaveBeenCalledWith(500);
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'error',
         statusCode: 500,
-        message: 'An unexpected error occurred' // In test mode, this is the expected message
+        message: 'An unexpected error occurred', // In test mode, this is the expected message
       });
     });
 
     it('should still show ApiError messages in production', () => {
       const apiError = new ApiError(400, 'Bad request');
 
-      errorMiddleware(
-        apiError,
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
+      errorMiddleware(apiError, mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.status).toHaveBeenCalledWith(400);
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'error',
         statusCode: 400,
-        message: 'Bad request'
+        message: 'Bad request',
       });
     });
   });
@@ -214,12 +189,7 @@ describe('Error Middleware', () => {
       mockRequest.method = 'POST';
       mockRequest.ip = '192.168.1.1';
 
-      errorMiddleware(
-        error,
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
+      errorMiddleware(error, mockRequest as Request, mockResponse as Response, mockNext);
 
       // Verify that the error middleware processes the request context
       expect(mockResponse.status).toHaveBeenCalledWith(500);
@@ -231,30 +201,20 @@ describe('Error Middleware', () => {
       const error = new Error('Test error');
       delete error.stack;
 
-      errorMiddleware(
-        error,
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
+      errorMiddleware(error, mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.status).toHaveBeenCalledWith(500);
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'error',
         statusCode: 500,
-        message: 'An unexpected error occurred'
+        message: 'An unexpected error occurred',
       });
     });
 
     it('should handle null request', () => {
       const error = new Error('Test error');
 
-      errorMiddleware(
-        error,
-        null as any,
-        mockResponse as Response,
-        mockNext
-      );
+      errorMiddleware(error, null as any, mockResponse as Response, mockNext);
 
       expect(mockResponse.status).toHaveBeenCalledWith(500);
     });

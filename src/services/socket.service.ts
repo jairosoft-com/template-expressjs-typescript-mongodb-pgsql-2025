@@ -31,8 +31,19 @@ interface LiveUpdate {
   broadcast: boolean;
 }
 
-class SocketService {
-  private io: SocketIOServer | null = null;
+// Public interface for SocketService to use in other services
+export interface ISocketService {
+  io: SocketIOServer | null;
+  broadcastUserStatus(userId: string, status: 'online' | 'offline'): void;
+  sendNotification(
+    userId: string,
+    notification: Omit<Notification, 'id' | 'userId' | 'read' | 'createdAt'>
+  ): void;
+  broadcastLiveUpdate(update: Omit<LiveUpdate, 'id' | 'timestamp'>): void;
+}
+
+class SocketService implements ISocketService {
+  public io: SocketIOServer | null = null; // Made public for interface
   private connectedUsers: Map<string, SocketUser> = new Map();
   private notifications: Map<string, Notification[]> = new Map();
   private liveUpdates: LiveUpdate[] = [];
@@ -64,20 +75,20 @@ class SocketService {
     this.io.use(async (socket, next) => {
       try {
         const token = socket.handshake.auth.token || socket.handshake.headers.authorization;
-        
+
         if (!token) {
           return next(new Error('Authentication token required'));
         }
 
         const cleanToken = token.replace('Bearer ', '');
         const decoded = jwt.verify(cleanToken, config.jwt.secret) as any;
-        
+
         socket.data.userId = decoded.userId;
         socket.data.email = decoded.email;
-        
+
         next();
       } catch (error) {
-        logger.error('Socket authentication failed:', error);
+        logger.error({ error }, 'Socket authentication failed');
         next(new Error('Invalid authentication token'));
       }
     });
@@ -176,7 +187,7 @@ class SocketService {
     if (user && user.socketId === socketId) {
       this.connectedUsers.delete(userId);
       logger.info(`User ${user.email} disconnected`);
-      
+
       // Broadcast user offline status
       this.broadcastUserStatus(userId, 'offline');
     }
@@ -190,7 +201,7 @@ class SocketService {
     if (user) {
       user.lastActivity = new Date();
       this.connectedUsers.set(userId, user);
-      
+
       // Broadcast activity to relevant users
       this.broadcastUserActivity(userId, data);
     }
@@ -201,7 +212,7 @@ class SocketService {
    */
   private handleCustomEvent(userId: string, data: any): void {
     logger.info(`Custom event from user ${userId}:`, data);
-    
+
     // Process custom event based on type
     switch (data.type) {
       case 'data_update':
@@ -260,7 +271,7 @@ class SocketService {
 
     // Send to connected user
     this.io?.to(`user:${userId}`).emit('notification', fullNotification);
-    
+
     logger.info(`Notification sent to user ${userId}: ${notification.title}`);
   }
 
@@ -269,8 +280,8 @@ class SocketService {
    */
   private sendPendingNotifications(userId: string): void {
     const userNotifications = this.notifications.get(userId) || [];
-    const unreadNotifications = userNotifications.filter(n => !n.read);
-    
+    const unreadNotifications = userNotifications.filter((n) => !n.read);
+
     if (unreadNotifications.length > 0) {
       this.io?.to(`user:${userId}`).emit('pending_notifications', unreadNotifications);
       logger.info(`Sent ${unreadNotifications.length} pending notifications to user ${userId}`);
@@ -282,8 +293,8 @@ class SocketService {
    */
   private markNotificationAsRead(userId: string, notificationId: string): void {
     const userNotifications = this.notifications.get(userId) || [];
-    const notification = userNotifications.find(n => n.id === notificationId);
-    
+    const notification = userNotifications.find((n) => n.id === notificationId);
+
     if (notification) {
       notification.read = true;
       logger.info(`Notification ${notificationId} marked as read by user ${userId}`);
@@ -293,7 +304,7 @@ class SocketService {
   /**
    * Broadcast user status
    */
-  private broadcastUserStatus(userId: string, status: 'online' | 'offline'): void {
+  public broadcastUserStatus(userId: string, status: 'online' | 'offline'): void {
     const user = this.connectedUsers.get(userId);
     if (user) {
       this.io?.emit('user_status', {
@@ -349,10 +360,10 @@ class SocketService {
     };
 
     this.liveUpdates.push(liveUpdate);
-    
+
     // Broadcast to all connected users
     this.io?.emit('data_update', liveUpdate);
-    
+
     logger.info(`Data update broadcasted by user ${userId}`);
   }
 
@@ -362,7 +373,7 @@ class SocketService {
   private handleSystemInteraction(userId: string, data: any): void {
     // Process system interaction
     logger.info(`System interaction from user ${userId}:`, data);
-    
+
     // Send acknowledgment
     this.io?.to(`user:${userId}`).emit('system_interaction_ack', {
       success: true,
@@ -460,6 +471,32 @@ class SocketService {
       this.connectedUsers.delete(userId);
       logger.info(`User ${userId} forcefully disconnected`);
     }
+  }
+
+  /**
+   * Broadcast live update to all connected clients
+   * Implements the ISocketService interface method
+   */
+  public broadcastLiveUpdate(update: Omit<LiveUpdate, 'id' | 'timestamp'>): void {
+    const liveUpdate: LiveUpdate = {
+      id: `update_${Date.now()}`,
+      ...update,
+      timestamp: new Date(),
+      broadcast: true,
+    };
+
+    // Store the update
+    this.liveUpdates.push(liveUpdate);
+
+    // Keep only last 100 updates
+    if (this.liveUpdates.length > 100) {
+      this.liveUpdates.shift();
+    }
+
+    // Broadcast to all connected clients
+    this.io?.emit('live_update', liveUpdate);
+
+    logger.info({ updateType: update.type }, 'Live update broadcasted');
   }
 }
 

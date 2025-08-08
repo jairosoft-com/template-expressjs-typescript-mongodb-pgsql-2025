@@ -91,7 +91,7 @@ class EventService extends EventEmitter {
     }
 
     this.handlers.get(eventType)!.push(eventHandler);
-    
+
     // Sort handlers by priority (higher priority first)
     this.handlers.get(eventType)!.sort((a, b) => b.priority - a.priority);
 
@@ -108,7 +108,7 @@ class EventService extends EventEmitter {
     metadata?: Record<string, any>
   ): Promise<string> {
     const eventId = `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     const event: EventData = {
       id: eventId,
       type: eventType,
@@ -120,7 +120,7 @@ class EventService extends EventEmitter {
 
     // Store event
     this.events.push(event);
-    
+
     // Keep only recent events
     if (this.events.length > this.maxEventHistory) {
       this.events = this.events.slice(-this.maxEventHistory);
@@ -159,27 +159,30 @@ class EventService extends EventEmitter {
     for (const handler of handlers) {
       try {
         await handler.handler(event);
-        
+
         // Mark as processed
-        const eventLog = this.eventLogs.find(log => log.eventId === event.id);
+        const eventLog = this.eventLogs.find((log) => log.eventId === event.id);
         if (eventLog) {
           eventLog.processed = true;
         }
 
         logger.debug(`Event ${event.type} processed by handler`);
       } catch (error) {
-        logger.error(`Error processing event ${event.type}:`, error);
-        
+        logger.error({ error }, `Error processing event ${event.type}`);
+
         // Update event log with error
-        const eventLog = this.eventLogs.find(log => log.eventId === event.id);
+        const eventLog = this.eventLogs.find((log) => log.eventId === event.id);
         if (eventLog && handler.retryable && eventLog.retryCount < handler.maxRetries) {
           eventLog.retryCount++;
           eventLog.error = error instanceof Error ? error.message : 'Unknown error';
-          
+
           // Schedule retry
-          setTimeout(() => {
-            this.processEvent(event);
-          }, Math.pow(2, eventLog.retryCount) * 1000); // Exponential backoff
+          setTimeout(
+            () => {
+              this.processEvent(event);
+            },
+            Math.pow(2, eventLog.retryCount) * 1000
+          ); // Exponential backoff
         }
       }
     }
@@ -196,14 +199,14 @@ class EventService extends EventEmitter {
     this.isReplaying = true;
     logger.info(`Starting event replay from ${fromTimestamp.toISOString()}`);
 
-    const eventsToReplay = this.events.filter(event => event.timestamp >= fromTimestamp);
-    
+    const eventsToReplay = this.events.filter((event) => event.timestamp >= fromTimestamp);
+
     for (const event of eventsToReplay) {
       try {
         await this.processEvent(event);
         logger.debug(`Replayed event: ${event.type} (${event.id})`);
       } catch (error) {
-        logger.error(`Error replaying event ${event.type}:`, error);
+        logger.error({ error }, `Error replaying event ${event.type}`);
       }
     }
 
@@ -215,14 +218,14 @@ class EventService extends EventEmitter {
    * Get events by type
    */
   getEventsByType(eventType: string): EventData[] {
-    return this.events.filter(event => event.type === eventType);
+    return this.events.filter((event) => event.type === eventType);
   }
 
   /**
    * Get events by user
    */
   getEventsByUser(userId: string): EventData[] {
-    return this.events.filter(event => event.userId === userId);
+    return this.events.filter((event) => event.userId === userId);
   }
 
   /**
@@ -239,7 +242,7 @@ class EventService extends EventEmitter {
     const eventCounts: Record<string, number> = {};
     const userEventCounts: Record<string, number> = {};
 
-    this.events.forEach(event => {
+    this.events.forEach((event) => {
       eventCounts[event.type] = (eventCounts[event.type] || 0) + 1;
       if (event.userId) {
         userEventCounts[event.userId] = (userEventCounts[event.userId] || 0) + 1;
@@ -251,7 +254,7 @@ class EventService extends EventEmitter {
       eventTypes: Object.keys(eventCounts).length,
       eventCounts,
       userEventCounts,
-      recentActivity: this.events.slice(-10).map(event => ({
+      recentActivity: this.events.slice(-10).map((event) => ({
         type: event.type,
         userId: event.userId,
         timestamp: event.timestamp,
@@ -264,9 +267,9 @@ class EventService extends EventEmitter {
    */
   clearOldEvents(olderThan: Date): void {
     const initialCount = this.events.length;
-    this.events = this.events.filter(event => event.timestamp >= olderThan);
+    this.events = this.events.filter((event) => event.timestamp >= olderThan);
     const removedCount = initialCount - this.events.length;
-    
+
     logger.info(`Cleared ${removedCount} old events`);
   }
 
@@ -274,7 +277,7 @@ class EventService extends EventEmitter {
 
   private async handleUserRegistered(event: EventData): Promise<void> {
     logger.info(`User registered: ${event.userId}`);
-    
+
     // Send welcome notification
     if (event.userId) {
       socketService.sendNotification(event.userId, {
@@ -292,25 +295,27 @@ class EventService extends EventEmitter {
 
   private async handleUserLoggedIn(event: EventData): Promise<void> {
     logger.info(`User logged in: ${event.userId}`);
-    
+
     // Update user status
     if (event.userId) {
+      // Use public API to broadcast user status
       socketService.broadcastUserStatus(event.userId, 'online');
     }
   }
 
   private async handleUserLoggedOut(event: EventData): Promise<void> {
     logger.info(`User logged out: ${event.userId}`);
-    
+
     // Update user status
     if (event.userId) {
+      // Use public API to broadcast user status
       socketService.broadcastUserStatus(event.userId, 'offline');
     }
   }
 
   private async handleUserUpdated(event: EventData): Promise<void> {
     logger.info(`User updated: ${event.userId}`);
-    
+
     // Broadcast user update
     if (event.userId) {
       socketService.sendToRoom('user_updates', 'user_updated', {
@@ -321,12 +326,12 @@ class EventService extends EventEmitter {
     }
   }
 
-  private async handleSystemStartup(event: EventData): Promise<void> {
+  private async handleSystemStartup(_event: EventData): Promise<void> {
     logger.info('System startup event processed');
     socketService.broadcastSystemMessage('System is starting up', 'info');
   }
 
-  private async handleSystemShutdown(event: EventData): Promise<void> {
+  private async handleSystemShutdown(_event: EventData): Promise<void> {
     logger.info('System shutdown event processed');
     socketService.broadcastSystemMessage('System is shutting down', 'warning');
   }
@@ -338,7 +343,7 @@ class EventService extends EventEmitter {
 
   private async handleDataCreated(event: EventData): Promise<void> {
     logger.info(`Data created: ${event.type}`);
-    
+
     // Broadcast data creation
     socketService.io?.emit('data_created', {
       type: event.type,
@@ -350,7 +355,7 @@ class EventService extends EventEmitter {
 
   private async handleDataUpdated(event: EventData): Promise<void> {
     logger.info(`Data updated: ${event.type}`);
-    
+
     // Broadcast data update
     socketService.io?.emit('data_updated', {
       type: event.type,
@@ -362,7 +367,7 @@ class EventService extends EventEmitter {
 
   private async handleDataDeleted(event: EventData): Promise<void> {
     logger.info(`Data deleted: ${event.type}`);
-    
+
     // Broadcast data deletion
     socketService.io?.emit('data_deleted', {
       type: event.type,
@@ -374,7 +379,7 @@ class EventService extends EventEmitter {
 
   private async handleNotificationSent(event: EventData): Promise<void> {
     logger.info(`Notification sent: ${event.data.title}`);
-    
+
     // Broadcast notification event
     socketService.io?.emit('notification_sent', {
       userId: event.userId,
@@ -385,7 +390,7 @@ class EventService extends EventEmitter {
 
   private async handleNotificationRead(event: EventData): Promise<void> {
     logger.info(`Notification read: ${event.data.notificationId}`);
-    
+
     // Broadcast notification read event
     socketService.io?.emit('notification_read', {
       userId: event.userId,

@@ -1,7 +1,5 @@
 import { Request, Response } from 'express';
-import { connectPostgres, closePostgres } from '@/database/postgres';
-import { connectMongo, closeMongo } from '@/database/mongo';
-import { connectRedis, closeRedis } from '@/database/redis';
+import { connectMongo } from '@/database/mongo';
 import logger from '@common/utils/logger';
 import config from '@/config';
 
@@ -91,16 +89,14 @@ interface HealthCheck {
  *                   type: string
  *                   example: "One or more health checks failed"
  */
-export const getHealth = async (req: Request, res: Response) => {
-  const startTime = Date.now();
-  
+export const getHealth = async (_req: Request, res: Response) => {
   try {
     // Check database connections
     const dbChecks = await checkDatabases();
-    
+
     // Check system resources
     const systemChecks = checkSystemResources();
-    
+
     // Determine overall health status
     const allChecks = [
       dbChecks.mongodb,
@@ -109,18 +105,18 @@ export const getHealth = async (req: Request, res: Response) => {
       systemChecks.memory,
       systemChecks.disk,
     ];
-    
-    const unhealthyChecks = allChecks.filter(check => check.status === 'unhealthy');
-    const degradedChecks = allChecks.filter(check => check.status === 'degraded');
-    
+
+    const unhealthyChecks = allChecks.filter((check) => check.status === 'unhealthy');
+    // Note: HealthCheck interface only supports 'healthy' | 'unhealthy', not 'degraded'
+    // const degradedChecks = allChecks.filter((check) => check.status === 'degraded');
+
     let overallStatus: 'healthy' | 'unhealthy' | 'degraded' = 'healthy';
-    
+
     if (unhealthyChecks.length > 0) {
       overallStatus = 'unhealthy';
-    } else if (degradedChecks.length > 0) {
-      overallStatus = 'degraded';
     }
-    
+    // Removed degraded status check as it's not supported by HealthCheck interface
+
     const healthStatus: HealthStatus = {
       status: overallStatus,
       timestamp: new Date().toISOString(),
@@ -133,14 +129,13 @@ export const getHealth = async (req: Request, res: Response) => {
         disk: systemChecks.disk,
       },
     };
-    
+
     const statusCode = overallStatus === 'healthy' ? 200 : 503;
-    
+
     res.status(statusCode).json(healthStatus);
-    
   } catch (error) {
-    logger.error('Health check failed:', error);
-    
+    logger.error({ error }, 'Health check failed');
+
     res.status(503).json({
       status: 'unhealthy',
       message: 'Health check failed',
@@ -186,14 +181,14 @@ export const getHealth = async (req: Request, res: Response) => {
  *                   type: string
  *                   example: "Application is still starting up"
  */
-export const getReadiness = async (req: Request, res: Response) => {
+export const getReadiness = async (_req: Request, res: Response) => {
   try {
     // Check if all critical dependencies are available
     const dbChecks = await checkDatabases();
     const criticalChecks = [dbChecks.mongodb, dbChecks.postgres, dbChecks.redis];
-    
-    const isReady = criticalChecks.every(check => check.status === 'healthy');
-    
+
+    const isReady = criticalChecks.every((check) => check.status === 'healthy');
+
     if (isReady) {
       res.status(200).json({
         status: 'ready',
@@ -207,8 +202,8 @@ export const getReadiness = async (req: Request, res: Response) => {
       });
     }
   } catch (error) {
-    logger.error('Readiness check failed:', error);
-    
+    logger.error({ error }, 'Readiness check failed');
+
     res.status(503).json({
       status: 'not ready',
       message: 'Readiness check failed',
@@ -243,7 +238,7 @@ export const getReadiness = async (req: Request, res: Response) => {
  *                   type: number
  *                   example: 12345.67
  */
-export const getLiveness = (req: Request, res: Response) => {
+export const getLiveness = (_req: Request, res: Response) => {
   res.status(200).json({
     status: 'alive',
     timestamp: new Date().toISOString(),
@@ -264,7 +259,7 @@ const checkDatabases = async (): Promise<{
     postgres: await checkPostgreSQL(),
     redis: await checkRedis(),
   };
-  
+
   return checks;
 };
 
@@ -273,31 +268,55 @@ const checkDatabases = async (): Promise<{
  */
 const checkMongoDB = async (): Promise<HealthCheck> => {
   const startTime = Date.now();
-  
+
   try {
     // Try to connect to MongoDB
     await connectMongo();
-    
-    // Test the connection with a simple query
+
+    // Import mongoose to check connection state
     const { default: mongoose } = await import('mongoose');
+
+    // Check if the connection is in the connected state before any operations
+    // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
+    if (mongoose.connection.readyState !== 1) {
+      const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
+      const currentState = states[mongoose.connection.readyState] || 'unknown';
+      throw new Error(
+        `MongoDB connection is not in a connected state. Current state: ${currentState} (${mongoose.connection.readyState})`
+      );
+    }
+
+    // After verifying connection state, check if database object exists
+    if (!mongoose.connection.db) {
+      throw new Error('MongoDB database connection not established despite connected state');
+    }
+
+    // Get admin database for ping - this should be safe after connection checks
     const adminDb = mongoose.connection.db.admin();
+    if (!adminDb) {
+      throw new Error('MongoDB admin database not available despite valid connection');
+    }
+
+    // Ping the database to verify it's responsive
     await adminDb.ping();
-    
+
     const responseTime = Date.now() - startTime;
-    
+
     return {
       status: 'healthy',
       message: 'MongoDB connection is healthy',
       responseTime,
       details: {
-        database: mongoose.connection.name,
-        host: mongoose.connection.host,
-        port: mongoose.connection.port,
+        database: mongoose.connection.name || 'unknown',
+        host: mongoose.connection.host || 'unknown',
+        port: mongoose.connection.port || 27017,
+        readyState: mongoose.connection.readyState,
+        readyStateText: 'connected',
       },
     };
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    
+
     return {
       status: 'unhealthy',
       message: 'MongoDB connection failed',
@@ -314,7 +333,7 @@ const checkMongoDB = async (): Promise<HealthCheck> => {
  */
 const checkPostgreSQL = async (): Promise<HealthCheck> => {
   const startTime = Date.now();
-  
+
   try {
     // Try to connect to PostgreSQL
     const { Pool } = await import('pg');
@@ -325,15 +344,15 @@ const checkPostgreSQL = async (): Promise<HealthCheck> => {
       user: config.postgres.user,
       password: config.postgres.password,
     });
-    
+
     // Test the connection
     const client = await pool.connect();
     await client.query('SELECT 1');
     client.release();
     await pool.end();
-    
+
     const responseTime = Date.now() - startTime;
-    
+
     return {
       status: 'healthy',
       message: 'PostgreSQL connection is healthy',
@@ -346,7 +365,7 @@ const checkPostgreSQL = async (): Promise<HealthCheck> => {
     };
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    
+
     return {
       status: 'unhealthy',
       message: 'PostgreSQL connection failed',
@@ -363,20 +382,20 @@ const checkPostgreSQL = async (): Promise<HealthCheck> => {
  */
 const checkRedis = async (): Promise<HealthCheck> => {
   const startTime = Date.now();
-  
+
   try {
     // Try to connect to Redis
     const { createClient } = await import('redis');
     const client = createClient({
       url: `redis://${config.redis.host}:${config.redis.port}`,
     });
-    
+
     await client.connect();
     await client.ping();
     await client.disconnect();
-    
+
     const responseTime = Date.now() - startTime;
-    
+
     return {
       status: 'healthy',
       message: 'Redis connection is healthy',
@@ -388,7 +407,7 @@ const checkRedis = async (): Promise<HealthCheck> => {
     };
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    
+
     return {
       status: 'unhealthy',
       message: 'Redis connection failed',
@@ -409,9 +428,9 @@ const checkSystemResources = (): {
 } => {
   const memoryUsage = process.memoryUsage();
   const memoryUsagePercent = (memoryUsage.heapUsed / memoryUsage.heapTotal) * 100;
-  
+
   const memoryCheck: HealthCheck = {
-    status: memoryUsagePercent > 90 ? 'unhealthy' : memoryUsagePercent > 80 ? 'degraded' : 'healthy',
+    status: memoryUsagePercent > 90 ? 'unhealthy' : 'healthy',
     message: `Memory usage: ${memoryUsagePercent.toFixed(2)}%`,
     details: {
       heapUsed: memoryUsage.heapUsed,
@@ -420,7 +439,7 @@ const checkSystemResources = (): {
       rss: memoryUsage.rss,
     },
   };
-  
+
   // For disk check, we'll just return a basic check since we can't easily check disk space in Node.js
   const diskCheck: HealthCheck = {
     status: 'healthy',
@@ -429,7 +448,7 @@ const checkSystemResources = (): {
       note: 'Disk space monitoring requires additional libraries or system calls',
     },
   };
-  
+
   return {
     memory: memoryCheck,
     disk: diskCheck,

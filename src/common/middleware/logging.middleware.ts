@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import logger from '@common/utils/logger';
+import { randomUUID } from 'crypto';
+import { createChildLogger } from '@common/utils/logger';
 
 interface RequestLog {
   method: string;
@@ -37,21 +38,13 @@ interface ErrorLog {
   responseTime: number;
 }
 
-// Extend Express Request interface to include requestId
-declare global {
-  namespace Express {
-    interface Request {
-      requestId: string;
-      startTime: number;
-    }
-  }
-}
+// Request interface extensions are defined in src/common/types/express/index.d.ts
 
 /**
- * Generate a unique request ID
+ * Generate a unique request ID using UUID v4
  */
 const generateRequestId = (): string => {
-  return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return randomUUID();
 };
 
 /**
@@ -77,30 +70,36 @@ const extractUserId = (req: Request): string | undefined => {
  */
 const sanitizeBody = (body: any): any => {
   if (!body) return body;
-  
+
   const sanitized = { ...body };
   const sensitiveFields = ['password', 'token', 'secret', 'key', 'authorization'];
-  
-  sensitiveFields.forEach(field => {
+
+  sensitiveFields.forEach((field) => {
     if (sanitized[field]) {
       sanitized[field] = '[REDACTED]';
     }
   });
-  
+
   return sanitized;
 };
 
 /**
  * Request logging middleware
  */
-export const requestLogger = (req: Request, res: Response, next: NextFunction) => {
+export const requestLogger = (req: Request, _res: Response, next: NextFunction) => {
   // Generate unique request ID
   req.requestId = generateRequestId();
   req.startTime = Date.now();
-  
+
+  // Create child logger with correlation ID
+  const childLogger = createChildLogger(req.requestId);
+
+  // Attach logger to request for use in routes
+  req.logger = childLogger;
+
   // Extract user ID if available
   const userId = extractUserId(req);
-  
+
   // Create request log
   const requestLog: RequestLog = {
     method: req.method,
@@ -114,14 +113,16 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction) =
     query: Object.keys(req.query).length > 0 ? req.query : undefined,
     params: Object.keys(req.params).length > 0 ? req.params : undefined,
   };
-  
-  // Log request
-  logger.info('Incoming request', {
-    ...requestLog,
-    type: 'request',
-    level: 'info',
-  });
-  
+
+  // Log request with child logger
+  childLogger.info(
+    {
+      ...requestLog,
+      type: 'request',
+    },
+    'Incoming request'
+  );
+
   next();
 };
 
@@ -131,10 +132,13 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction) =
 export const responseLogger = (req: Request, res: Response, next: NextFunction) => {
   const originalSend = res.send;
   const userId = extractUserId(req);
-  
-  res.send = function(body) {
+
+  // Get child logger from request or create new one
+  const childLogger = req.logger || createChildLogger(req.requestId);
+
+  res.send = function (body) {
     const responseTime = Date.now() - req.startTime;
-    
+
     // Create response log
     const responseLog: ResponseLog = {
       method: req.method,
@@ -146,19 +150,21 @@ export const responseLogger = (req: Request, res: Response, next: NextFunction) 
       userId,
       contentLength: body ? Buffer.byteLength(body, 'utf8') : 0,
     };
-    
-    // Log response
-    const logLevel = res.statusCode >= 400 ? 'warn' : 'info';
-    logger.log(logLevel, 'Outgoing response', {
-      ...responseLog,
-      type: 'response',
-      level: logLevel,
-    });
-    
+
+    // Log response with appropriate level
+    const message = 'Outgoing response';
+    if (res.statusCode >= 500) {
+      childLogger.error({ ...responseLog, type: 'response' }, message);
+    } else if (res.statusCode >= 400) {
+      childLogger.warn({ ...responseLog, type: 'response' }, message);
+    } else {
+      childLogger.info({ ...responseLog, type: 'response' }, message);
+    }
+
     // Call original send method
     return originalSend.call(this, body);
   };
-  
+
   next();
 };
 
@@ -168,7 +174,10 @@ export const responseLogger = (req: Request, res: Response, next: NextFunction) 
 export const errorLogger = (error: Error, req: Request, res: Response, next: NextFunction) => {
   const responseTime = Date.now() - req.startTime;
   const userId = extractUserId(req);
-  
+
+  // Get child logger from request or create new one
+  const childLogger = req.logger || createChildLogger(req.requestId);
+
   // Create error log
   const errorLog: ErrorLog = {
     method: req.method,
@@ -181,14 +190,17 @@ export const errorLogger = (error: Error, req: Request, res: Response, next: Nex
     userId,
     responseTime,
   };
-  
-  // Log error
-  logger.error('Request error', {
-    ...errorLog,
-    type: 'error',
-    level: 'error',
-  });
-  
+
+  // Log error with child logger
+  childLogger.error(
+    {
+      ...errorLog,
+      type: 'error',
+      err: error,
+    },
+    'Request error'
+  );
+
   next(error);
 };
 
@@ -197,36 +209,32 @@ export const errorLogger = (error: Error, req: Request, res: Response, next: Nex
  */
 export const performanceMonitor = (req: Request, res: Response, next: NextFunction) => {
   const startTime = process.hrtime();
-  
+
+  // Get child logger from request or create new one
+  const childLogger = req.logger || createChildLogger(req.requestId);
+
   res.on('finish', () => {
     const [seconds, nanoseconds] = process.hrtime(startTime);
     const duration = seconds * 1000 + nanoseconds / 1000000; // Convert to milliseconds
-    
-    // Log slow requests (over 1 second)
-    if (duration > 1000) {
-      logger.warn('Slow request detected', {
-        method: req.method,
-        url: req.url,
-        duration: Math.round(duration),
-        statusCode: res.statusCode,
-        requestId: req.requestId,
-        type: 'performance',
-        level: 'warn',
-      });
-    }
-    
-    // Log performance metrics for all requests
-    logger.info('Request performance', {
+
+    const perfData = {
       method: req.method,
       url: req.url,
       duration: Math.round(duration),
       statusCode: res.statusCode,
       requestId: req.requestId,
       type: 'performance',
-      level: 'info',
-    });
+    };
+
+    // Log slow requests (over 1 second)
+    if (duration > 1000) {
+      childLogger.warn(perfData, 'Slow request detected');
+    } else if (process.env.LOG_LEVEL === 'debug') {
+      // Only log all performance metrics in debug mode
+      childLogger.debug(perfData, 'Request performance');
+    }
   });
-  
+
   next();
 };
 
@@ -238,7 +246,7 @@ export const healthCheckLogger = (req: Request, res: Response, next: NextFunctio
   if (req.url === '/' || req.url === '/health') {
     return next();
   }
-  
+
   // For all other requests, use the standard logging
   requestLogger(req, res, next);
 };

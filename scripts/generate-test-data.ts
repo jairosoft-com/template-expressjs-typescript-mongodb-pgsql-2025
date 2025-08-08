@@ -18,11 +18,11 @@ interface TestData {
 
 const generateTestUsers = (count: number): TestUser[] => {
   const users: TestUser[] = [];
-  
+
   for (let i = 0; i < count; i++) {
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
-    
+
     users.push({
       email: faker.internet.email({ firstName, lastName }),
       password: faker.internet.password({ length: 12 }),
@@ -30,7 +30,7 @@ const generateTestUsers = (count: number): TestUser[] => {
       lastName,
     });
   }
-  
+
   return users;
 };
 
@@ -41,11 +41,11 @@ const generateApiRequests = (count: number) => {
     { method: 'POST', path: '/api/v1/users/login' },
     { method: 'GET', path: '/' },
   ];
-  
+
   for (let i = 0; i < count; i++) {
     const endpoint = endpoints[Math.floor(Math.random() * endpoints.length)];
     const timestamp = faker.date.recent({ days: 7 });
-    
+
     requests.push({
       id: faker.string.uuid(),
       method: endpoint.method,
@@ -57,7 +57,7 @@ const generateApiRequests = (count: number) => {
       ip: faker.internet.ip(),
     });
   }
-  
+
   return requests;
 };
 
@@ -70,10 +70,10 @@ const generateErrorLogs = (count: number) => {
     'NetworkError',
     'InternalServerError',
   ];
-  
+
   for (let i = 0; i < count; i++) {
     const timestamp = faker.date.recent({ days: 7 });
-    
+
     errors.push({
       id: faker.string.uuid(),
       type: faker.helpers.arrayElement(errorTypes),
@@ -84,7 +84,7 @@ const generateErrorLogs = (count: number) => {
       userId: faker.helpers.arrayElement([null, faker.string.uuid()]),
     });
   }
-  
+
   return errors;
 };
 
@@ -100,33 +100,33 @@ const generateTestData = (options: {
     errorsCount = 20,
     outputDir = './test-data',
   } = options;
-  
+
   logger.info('Generating test data...');
-  
+
   const testData: TestData = {
     users: generateTestUsers(usersCount),
     apiRequests: generateApiRequests(requestsCount),
     errorLogs: generateErrorLogs(errorsCount),
   };
-  
+
   // Create output directory if it doesn't exist
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
   }
-  
+
   // Write test data to files
   const files = [
     { name: 'users.json', data: testData.users },
     { name: 'api-requests.json', data: testData.apiRequests },
     { name: 'error-logs.json', data: testData.errorLogs },
   ];
-  
+
   files.forEach(({ name, data }) => {
     const filePath = path.join(outputDir, name);
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
     logger.info(`Generated ${name} with ${data.length} records`);
   });
-  
+
   // Generate a summary file
   const summary = {
     generatedAt: new Date().toISOString(),
@@ -141,13 +141,15 @@ const generateTestData = (options: {
       errorLogs: testData.errorLogs.slice(0, 3),
     },
   };
-  
+
   const summaryPath = path.join(outputDir, 'summary.json');
   fs.writeFileSync(summaryPath, JSON.stringify(summary, null, 2));
-  
+
   logger.info(`Test data generation completed! Files saved to ${outputDir}`);
-  logger.info(`Summary: ${testData.users.length} users, ${testData.apiRequests.length} requests, ${testData.errorLogs.length} errors`);
-  
+  logger.info(
+    `Summary: ${testData.users.length} users, ${testData.apiRequests.length} requests, ${testData.errorLogs.length} errors`
+  );
+
   return testData;
 };
 
@@ -160,7 +162,7 @@ if (require.main === module) {
     errorsCount: parseInt(args[2]) || 20,
     outputDir: args[3] || './test-data',
   };
-  
+
   generateTestData(options);
 }
 

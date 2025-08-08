@@ -1,17 +1,19 @@
 # Express.js TypeScript Microservice Template
 
-A production-grade template for Express.js microservices with TypeScript, featuring real-time capabilities, advanced security, and scalable microservices architecture. This template provides a solid foundation for building enterprise-level backend services with modern best practices.
+A production-grade, AI-friendly template for Express.js microservices with TypeScript, featuring component-based architecture, Prisma ORM, real-time capabilities, advanced security, and scalable microservices patterns. This template provides a solid foundation for building enterprise-level backend services with modern best practices and exceptional developer experience.
 
 ## 🚀 Features
 
 ### Core Infrastructure
-- **TypeScript 5.8+** - Full type safety with strict mode enabled
-- **Express.js 5.1** - Latest version with modern middleware support
-- **Multi-Database Architecture** - PostgreSQL, MongoDB, and Redis support
-- **JWT Authentication** - Secure token-based authentication with bcrypt password hashing
+- **TypeScript 5.8+** - Full type safety with strict mode and latest ES2022 features
+- **Express.js 5.1** - Latest version with component-based architecture
+- **Prisma ORM** - Type-safe database access with migrations and schema management
+- **Multi-Database Architecture** - PostgreSQL (primary), MongoDB (legacy), Redis (caching)
+- **Component-Based Architecture** - Auto-discovery and modular design patterns
+- **JWT Authentication** - Secure token-based authentication with refresh tokens
 - **Request Validation** - Zod schema validation for type-safe API inputs
 - **Comprehensive Testing** - Unit tests (Jest), API tests (Supertest), E2E tests (Playwright)
-- **Docker & Docker Compose** - Complete containerization with multi-service setup
+- **Docker & Docker Compose** - Production-optimized multi-stage builds
 
 ### 🔄 Real-time Features (Phase 5)
 - **WebSocket Server** - Socket.IO with authentication and real-time messaging
@@ -35,49 +37,68 @@ A production-grade template for Express.js microservices with TypeScript, featur
 - **Health Monitoring** - Real-time service health checks
 
 ### Developer Experience
-- **Structured Logging** - Winston logger with configurable log levels
+- **Pino Logger** - High-performance structured logging with request tracking
 - **Error Handling** - Centralized error handling with custom ApiError class
-- **Code Quality** - ESLint + Prettier with TypeScript support
-- **Hot Reload** - Development server with nodemon
-- **API Documentation** - Swagger/OpenAPI with interactive docs
-- **Development Tools** - Database seeding, test data generation, setup scripts
+- **Code Quality** - ESLint + Prettier with pre-commit hooks
+- **Hot Reload** - Development server with tsx watch mode
+- **API Documentation** - Swagger/OpenAPI with interactive docs at `/api-docs`
+- **Development Tools** - Component generators, test scaffolding, database seeding
+- **Test Utilities** - Comprehensive test helpers, mocks, and factories
+- **AI-Friendly Structure** - Clear separation of concerns, extensive documentation
 
 ## 📋 Prerequisites
 
 - **Node.js 18+** (for latest ES2022 features)
 - **npm 10+** or **yarn**
-- **Docker and Docker Compose** (for containerized development)
+- **PostgreSQL 14+** (or use Docker)
+- **Redis 6+** (or use Docker)
+- **MongoDB 5+** (optional, for legacy features)
+- **Docker and Docker Compose** (recommended for development)
 - **Git**
 
 ## 🛠️ Getting Started
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd template-expressjs-typescript-mongodb-pgsql-2025
-   ```
+### Quick Start (Docker)
+```bash
+# Clone repository
+git clone <repository-url>
+cd template-expressjs-typescript-mongodb-pgsql-2025
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+# Setup environment
+cp .env.example .env
 
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   ```
-   Edit `.env` with your configuration values (see Environment Variables section).
+# Start everything with Docker
+docker-compose up
+```
 
-4. **Start development with Docker (recommended)**
-   ```bash
-   docker-compose up
-   ```
-   This starts the app with all databases (PostgreSQL, MongoDB, Redis).
+### Local Development Setup
+```bash
+# Install dependencies
+npm install
 
-5. **Or run locally**
-   ```bash
-   npm run dev
-   ```
+# Setup Prisma
+npx prisma generate
+npx prisma migrate dev
+
+# Seed database
+npm run seed
+
+# Start development server
+npm run dev
+```
+
+### First-Time Setup
+```bash
+# Run automated setup script
+npm run setup:dev
+
+# This will:
+# - Install dependencies
+# - Setup databases
+# - Run migrations
+# - Seed initial data
+# - Verify setup
+```
 
 ## 📜 Available Scripts
 
@@ -99,6 +120,11 @@ A production-grade template for Express.js microservices with TypeScript, featur
 | `npm run docs` | View API documentation URL |
 | `npm run clean` | Clean build artifacts and test results |
 | `npm run reset` | Reset project to clean state |
+| `npm run generate:component` | Generate new component with all files |
+| `npm run generate:test` | Generate test file for existing code |
+| `npx prisma studio` | Open Prisma Studio for database management |
+| `npx prisma migrate dev` | Create and apply database migrations |
+| `npx prisma db push` | Push schema changes without migration |
 
 ## 🔄 Real-time Features
 
@@ -237,13 +263,15 @@ docker-compose run playwright-tests npm run test:e2e
 
 ## 🏗️ Project Architecture
 
-### Layered Architecture
-This template follows a clean, layered architecture pattern:
+### Component-Based Architecture
+This template follows a component-based architecture with auto-discovery:
 
-- **Controller Layer** - HTTP request/response handling
-- **Service Layer** - Business logic and data processing
-- **Data Layer** - Database models and connections
+- **Components** - Self-contained feature modules with all related files
+- **Controller Layer** - HTTP request/response handling and routing
+- **Service Layer** - Business logic, orchestration, and data processing  
+- **Repository Layer** - Data access abstraction with Prisma ORM
 - **Validation Layer** - Input validation with Zod schemas
+- **Common Layer** - Shared utilities, constants, and types
 
 ### Microservices Architecture
 - **API Gateway** - Request routing and load balancing
@@ -251,16 +279,25 @@ This template follows a clean, layered architecture pattern:
 - **Event-Driven Communication** - Asynchronous service communication
 - **Circuit Breaker Pattern** - Fault tolerance and resilience
 
-### Feature-Based Organization
-Each feature is self-contained with all related files:
+### Component Structure
+Each component is self-contained with standardized file organization:
 ```
-src/api/users/
+src/components/users/
+├── index.ts              # Component exports and auto-discovery
 ├── user.controller.ts    # Request/Response handling
 ├── user.service.ts       # Business logic
-├── user.routes.ts        # Route definitions
+├── user.routes.ts        # Route definitions  
 ├── user.types.ts         # TypeScript interfaces
 ├── user.validation.ts    # Zod validation schemas
 └── user.service.spec.ts  # Unit tests
+```
+
+### Repository Pattern
+```
+src/repositories/
+├── base.repository.ts    # Generic CRUD operations
+├── user.repository.ts    # User-specific data access
+└── interfaces/           # Repository interfaces
 ```
 
 ## 📁 Project Structure
@@ -268,7 +305,18 @@ src/api/users/
 ```
 template-expressjs-typescript-mongodb-pgsql-2025/
 ├── src/                          # Main source code
-│   ├── api/                      # API layer (feature-based)
+│   ├── components/               # Component-based features
+│   │   ├── users/               # User component
+│   │   ├── auth/                # Authentication component
+│   │   └── health/              # Health check component
+│   ├── repositories/             # Data access layer
+│   │   ├── base.repository.ts
+│   │   └── user.repository.ts
+│   ├── common/                   # Shared resources
+│   │   ├── constants/           # Application constants
+│   │   ├── utils/               # Utility functions
+│   │   └── test/                # Test utilities
+│   ├── api/                      # Legacy API layer
 │   │   ├── users/               # User feature module
 │   │   │   ├── user.controller.ts    # Request/Response handling
 │   │   │   ├── user.service.ts       # Business logic
@@ -308,7 +356,13 @@ template-expressjs-typescript-mongodb-pgsql-2025/
 │   ├── types/                   # TypeScript type definitions
 │   │   └── express/             # Express type extensions
 │   └── server.ts                # Application entry point
+├── prisma/                      # Prisma ORM configuration
+│   ├── schema.prisma            # Database schema
+│   ├── migrations/              # Database migrations
+│   └── seed.ts                  # Database seeding
 ├── scripts/                     # Development utilities
+│   ├── generate-component.ts    # Component generator
+│   ├── generate-test.ts         # Test file generator
 │   ├── seed-database.ts         # Database seeding
 │   ├── generate-test-data.ts    # Test data generation
 │   ├── setup-dev.ts             # Development environment setup
@@ -336,18 +390,21 @@ template-expressjs-typescript-mongodb-pgsql-2025/
 
 1. **Unit Tests** - Jest + ts-jest
    - Test individual functions and services
-   - Mock external dependencies
-   - Fast execution for development
+   - Mock external dependencies with test utilities
+   - Fast execution with watch mode
+   - Coverage reporting with Istanbul
 
 2. **Integration Tests** - Supertest
-   - Test API endpoints
+   - Test API endpoints with real database
    - Verify request/response handling
    - Test middleware integration
+   - Transaction rollback for test isolation
 
 3. **E2E Tests** - Playwright
    - Test complete user workflows
    - Cross-browser testing (Chrome, Firefox, Safari)
    - Real browser automation
+   - Visual regression testing support
 
 ### Running Tests
 ```bash
@@ -357,12 +414,23 @@ npm test
 # Unit tests in watch mode
 npm run test:watch
 
+# Test coverage report
+npm run test:coverage
+
 # E2E tests
 npm run test:e2e
 
 # E2E test report
 npm run test:e2e:report
+
+# Generate test for a file
+npm run generate:test src/services/example.service.ts
 ```
+
+### Test Utilities
+- **Test Helpers** - Mock request/response, auth helpers
+- **Mock Factories** - Pre-configured mocks for dependencies
+- **Data Factories** - Generate realistic test data with Faker.js
 
 ## 🔧 Environment Variables
 
@@ -381,14 +449,14 @@ JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 JWT_EXPIRES_IN=24h
 
 # Database Configuration
+DATABASE_URL=postgresql://postgres:password@localhost:5432/express_template
 MONGODB_URI=mongodb://localhost:27017/express-template
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-POSTGRES_DB=express_template
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=password
-REDIS_HOST=localhost
-REDIS_PORT=6379
+REDIS_URL=redis://localhost:6379
+
+# Feature Flags
+USE_PRISMA=true
+ENABLE_WEBSOCKET=true
+ENABLE_2FA=true
 
 # OAuth Configuration (Optional)
 GOOGLE_CLIENT_ID=your_google_client_id
@@ -417,27 +485,61 @@ The application uses Zod to validate all environment variables at startup, ensur
 
 ## 🚀 Deployment
 
-### Production Considerations
-1. **Environment Variables** - Set all required environment variables
-2. **Database Connections** - Use production database URLs
-3. **Logging** - Configure appropriate log levels
-4. **Security** - Use strong JWT secrets and HTTPS
-5. **Monitoring** - Implement health checks and metrics
-6. **OAuth Configuration** - Configure OAuth providers for production
-7. **2FA Setup** - Ensure 2FA is properly configured
-8. **Service Discovery** - Configure service discovery for production
+### Production Checklist
+- [ ] Set all required environment variables
+- [ ] Configure production database with connection pooling
+- [ ] Run Prisma migrations: `npx prisma migrate deploy`
+- [ ] Set appropriate log levels (warn/error)
+- [ ] Use strong secrets (JWT, session, OAuth)
+- [ ] Enable HTTPS with valid certificates
+- [ ] Configure rate limiting and CORS
+- [ ] Setup monitoring and alerting
+- [ ] Configure OAuth redirect URLs
+- [ ] Enable 2FA for admin accounts
+- [ ] Setup backup and recovery procedures
+- [ ] Configure CDN for static assets
+- [ ] Enable security headers (CSP, HSTS)
 
 ### Docker Production
 ```bash
 # Build optimized production image
-docker build -t express-microservice:latest .
+docker build --target production -t express-microservice:latest .
 
 # Run with production environment
 docker run -d \
   --name express-app \
   -p 4010:4010 \
   --env-file .env.production \
+  --restart unless-stopped \
+  --memory="512m" \
+  --cpus="0.5" \
   express-microservice:latest
+```
+
+### Kubernetes Deployment
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: express-microservice
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: express-microservice
+  template:
+    spec:
+      containers:
+      - name: app
+        image: express-microservice:latest
+        ports:
+        - containerPort: 4010
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health/live
+        readinessProbe:
+          httpGet:
+            path: /api/v1/health/ready
 ```
 
 ## 📊 Monitoring & Observability
@@ -462,12 +564,24 @@ docker run -d \
 
 ## 🤝 Contributing
 
+### Development Workflow
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Ensure all tests pass
-6. Submit a pull request
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Generate component if needed: `npm run generate:component`
+4. Write tests first (TDD approach)
+5. Implement your changes
+6. Run tests: `npm test`
+7. Check types: `npm run type-check`
+8. Lint code: `npm run lint:fix`
+9. Commit with conventional commits
+10. Push and create a pull request
+
+### Code Standards
+- Follow TypeScript strict mode
+- Write comprehensive tests (aim for 80%+ coverage)
+- Use Zod for all input validation
+- Document complex logic with JSDoc
+- Follow component-based architecture
 
 ## 📄 License
 
@@ -483,6 +597,14 @@ For issues and questions:
 ---
 
 **Built with ❤️ using modern Node.js and TypeScript best practices**
+
+## 📚 Additional Resources
+
+- [Architecture Documentation](./ARCHITECTURE.md) - Detailed system design
+- [API Documentation](http://localhost:4010/api-docs) - Interactive Swagger UI
+- [Prisma Documentation](https://www.prisma.io/docs) - ORM documentation
+- [Component Generator Guide](./scripts/README.md) - How to use generators
+- [Testing Guide](./src/common/test/README.md) - Testing best practices
 
 ### 🎯 Key Features Summary
 
@@ -506,16 +628,22 @@ For issues and questions:
 - Docker containerization
 - CI/CD pipeline
 
-#### ✅ **Phase 4: Developer Experience**
-- Swagger/OpenAPI documentation
-- Database seeding scripts
-- Test data generation
-- Development environment setup
-- Health check endpoints
-- Request/response logging
-- Performance monitoring
+#### ✅ **Phase 4: Component Architecture & Prisma**
+- Component-based architecture with auto-discovery
+- Prisma ORM integration with migrations
+- Repository pattern implementation
+- Type-safe database operations
+- Feature flag system
 
-#### ✅ **Phase 5: Advanced Features**
+#### ✅ **Phase 5: Developer Experience & Polish**
+- Component and test generators
+- Comprehensive test utilities
+- Enhanced documentation
+- Docker optimization
+- Pre-commit hooks
+- AI-friendly code structure
+
+#### ✅ **Phase 6: Advanced Features**
 - **Real-time Features**: WebSocket server with Socket.IO, event-driven architecture
 - **Advanced Security**: OAuth 2.0 integration, two-factor authentication
 - **Microservices Architecture**: Service discovery, API Gateway, load balancing

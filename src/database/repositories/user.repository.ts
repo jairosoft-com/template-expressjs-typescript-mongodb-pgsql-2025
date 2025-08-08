@@ -4,8 +4,23 @@ import { ApiError } from '@common/utils/ApiError';
 import { mockUserRepository } from './mock.user.repository';
 
 /**
+ * Helper function to safely concatenate user names
+ * Handles null/undefined values gracefully
+ */
+function formatUserName(firstName?: string | null, lastName?: string | null): string {
+  const first = firstName?.trim() || '';
+  const last = lastName?.trim() || '';
+
+  if (first && last) {
+    return `${first} ${last}`;
+  }
+
+  return first || last || 'Unknown User';
+}
+
+/**
  * User Repository
- * 
+ *
  * Implements the repository pattern for user data access.
  * Provides a clean abstraction layer between the service layer
  * and the data access layer.
@@ -22,11 +37,15 @@ export class UserRepository {
       if (!user) {
         return null;
       }
-      
+
       return {
         id: user.id,
-        name: user.name,
+        name: formatUserName(user.firstName, user.lastName),
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
+        avatar: user.avatar,
+        emailVerified: user.emailVerified,
       };
     } catch (error) {
       throw new ApiError(500, 'Database error while finding user');
@@ -44,11 +63,15 @@ export class UserRepository {
       if (!user) {
         return null;
       }
-      
+
       return {
         id: user.id,
-        name: user.name,
+        name: formatUserName(user.firstName, user.lastName),
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
+        avatar: user.avatar,
+        emailVerified: user.emailVerified,
       };
     } catch (error) {
       throw new ApiError(500, 'Database error while finding user by email');
@@ -74,14 +97,23 @@ export class UserRepository {
    * @param userData - The user data to create
    * @returns Promise<UserPublicData>
    */
-  async create(userData: { name: string; email: string; password: string }): Promise<UserPublicData> {
+  async create(userData: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+  }): Promise<UserPublicData> {
     try {
       const newUser = await UserModel.create(userData);
-      
+
       return {
         id: newUser.id,
-        name: newUser.name,
+        name: formatUserName(newUser.firstName, newUser.lastName),
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
         email: newUser.email,
+        avatar: newUser.avatar,
+        emailVerified: newUser.emailVerified,
       };
     } catch (error: any) {
       if (error.code === 11000) {
@@ -98,22 +130,28 @@ export class UserRepository {
    * @param updateData - The data to update
    * @returns Promise<UserPublicData | null>
    */
-  async updateById(id: string, updateData: Partial<{ name: string; email: string }>): Promise<UserPublicData | null> {
+  async updateById(
+    id: string,
+    updateData: Partial<{ firstName: string; lastName: string; email: string }>
+  ): Promise<UserPublicData | null> {
     try {
-      const updatedUser = await UserModel.findByIdAndUpdate(
-        id,
-        updateData,
-        { new: true, runValidators: true }
-      );
-      
+      const updatedUser = await UserModel.findByIdAndUpdate(id, updateData, {
+        new: true,
+        runValidators: true,
+      });
+
       if (!updatedUser) {
         return null;
       }
-      
+
       return {
         id: updatedUser.id,
-        name: updatedUser.name,
+        name: formatUserName(updatedUser.firstName, updatedUser.lastName),
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
         email: updatedUser.email,
+        avatar: updatedUser.avatar,
+        emailVerified: updatedUser.emailVerified,
       };
     } catch (error: any) {
       if (error.code === 11000) {
@@ -143,19 +181,26 @@ export class UserRepository {
    * @param skip - Number of users to skip
    * @returns Promise<{ users: UserPublicData[]; total: number }>
    */
-  async findAll(limit: number = 10, skip: number = 0): Promise<{ users: UserPublicData[]; total: number }> {
+  async findAll(
+    limit: number = 10,
+    skip: number = 0
+  ): Promise<{ users: UserPublicData[]; total: number }> {
     try {
       const [users, total] = await Promise.all([
         UserModel.find().limit(limit).skip(skip),
-        UserModel.countDocuments()
+        UserModel.countDocuments(),
       ]);
-      
-      const userPublicData = users.map(user => ({
+
+      const userPublicData = users.map((user) => ({
         id: user.id,
-        name: user.name,
+        name: formatUserName(user.firstName, user.lastName),
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
+        avatar: user.avatar,
+        emailVerified: user.emailVerified,
       }));
-      
+
       return {
         users: userPublicData,
         total,
@@ -182,6 +227,5 @@ export class UserRepository {
 
 // Export a singleton instance
 // Use mock repository when databases are not connected
-export const userRepository = process.env.SKIP_DB_CONNECTION === 'true' 
-  ? mockUserRepository 
-  : new UserRepository();
+export const userRepository =
+  process.env.SKIP_DB_CONNECTION === 'true' ? mockUserRepository : new UserRepository();

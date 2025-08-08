@@ -82,6 +82,30 @@ npm run clean
 npm run reset
 ```
 
+### Prisma Database Management
+```bash
+# Generate Prisma client
+npm run prisma:generate
+
+# Create and apply migrations (development)
+npm run prisma:migrate
+
+# Apply migrations (production)
+npm run prisma:migrate:prod
+
+# Open Prisma Studio (database GUI)
+npm run prisma:studio
+
+# Seed database with Prisma
+npm run prisma:seed
+
+# Reset database and apply all migrations
+npx prisma migrate reset
+
+# Enable Prisma instead of Mongoose
+export USE_PRISMA=true
+```
+
 ## Architecture Overview
 
 This is a production-grade Express.js microservice template with TypeScript, featuring real-time capabilities, advanced security, and microservices architecture.

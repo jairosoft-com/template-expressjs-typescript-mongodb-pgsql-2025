@@ -26,7 +26,8 @@ interface ServiceResponse {
 
 class ApiGatewayService {
   private routes: Map<string, RouteConfig> = new Map();
-  private circuitBreakers: Map<string, any> = new Map();
+  // Circuit breakers functionality can be implemented later
+  // private circuitBreakers: Map<string, any> = new Map();
   private requestCounters: Map<string, number> = new Map();
 
   constructor() {
@@ -119,7 +120,7 @@ class ApiGatewayService {
    */
   async routeRequest(req: Request, res: Response, next: NextFunction): Promise<void> {
     const routeConfig = this.getRoute(req.method, req.path);
-    
+
     if (!routeConfig) {
       return next();
     }
@@ -127,43 +128,47 @@ class ApiGatewayService {
     try {
       // Check rate limiting
       if (!this.checkRateLimit(routeConfig)) {
-        return res.status(429).json({
+        res.status(429).json({
           status: 'error',
           statusCode: 429,
           message: 'Rate limit exceeded',
         });
+        return;
       }
 
       // Authenticate request if required
       if (routeConfig.auth && !this.authenticateRequest(req)) {
-        return res.status(401).json({
+        res.status(401).json({
           status: 'error',
           statusCode: 401,
           message: 'Authentication required',
         });
+        return;
       }
 
       // Get service endpoint
       const serviceEndpoint = serviceDiscoveryService.getServiceEndpoint(routeConfig.service);
-      
+
       if (!serviceEndpoint) {
-        return res.status(503).json({
+        res.status(503).json({
           status: 'error',
           statusCode: 503,
           message: 'Service unavailable',
         });
+        return;
       }
 
       // Forward request to service
       const response = await this.forwardRequest(req, serviceEndpoint, routeConfig);
-      
+
       // Transform response if needed
-      const transformedResponse = routeConfig.transform 
+      const transformedResponse = routeConfig.transform
         ? this.transformResponse(response, routeConfig)
         : response;
 
       // Send response
-      res.status(transformedResponse.status)
+      res
+        .status(transformedResponse.status)
         .set(transformedResponse.headers)
         .json(transformedResponse.data);
 
@@ -178,10 +183,9 @@ class ApiGatewayService {
         responseTime: response.responseTime,
         statusCode: response.status,
       });
-
     } catch (error) {
-      logger.error('API Gateway error:', error);
-      
+      logger.error({ error }, 'API Gateway error');
+
       res.status(500).json({
         status: 'error',
         statusCode: 500,
@@ -198,13 +202,13 @@ class ApiGatewayService {
 
     const key = `${routeConfig.service}:${routeConfig.path}`;
     const currentCount = this.requestCounters.get(key) || 0;
-    
+
     if (currentCount >= routeConfig.rateLimit) {
       return false;
     }
 
     this.requestCounters.set(key, currentCount + 1);
-    
+
     // Reset counter after 1 minute
     setTimeout(() => {
       this.requestCounters.set(key, Math.max(0, (this.requestCounters.get(key) || 0) - 1));
@@ -218,7 +222,7 @@ class ApiGatewayService {
    */
   private authenticateRequest(req: Request): boolean {
     const authHeader = req.headers.authorization;
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return false;
     }
@@ -226,10 +230,10 @@ class ApiGatewayService {
     try {
       const token = authHeader.replace('Bearer ', '');
       const decoded = jwt.verify(token, config.jwt.secret) as any;
-      
+
       // Add user info to request
       (req as any).user = decoded;
-      
+
       return true;
     } catch (error) {
       return false;
@@ -239,12 +243,16 @@ class ApiGatewayService {
   /**
    * Forward request to service
    */
-  private async forwardRequest(req: Request, serviceEndpoint: string, routeConfig: RouteConfig): Promise<ServiceResponse> {
+  private async forwardRequest(
+    req: Request,
+    serviceEndpoint: string,
+    routeConfig: RouteConfig
+  ): Promise<ServiceResponse> {
     const startTime = Date.now();
-    
+
     const url = `${serviceEndpoint}${req.path}`;
     const headers = this.prepareHeaders(req);
-    
+
     const axiosConfig = {
       method: req.method,
       url,
@@ -256,9 +264,9 @@ class ApiGatewayService {
 
     try {
       const response: AxiosResponse = await axios(axiosConfig);
-      
+
       const responseTime = Date.now() - startTime;
-      
+
       return {
         data: response.data,
         status: response.status,
@@ -268,7 +276,7 @@ class ApiGatewayService {
       };
     } catch (error: any) {
       const responseTime = Date.now() - startTime;
-      
+
       if (error.response) {
         // Service responded with error
         return {
@@ -293,7 +301,7 @@ class ApiGatewayService {
       'Content-Type': 'application/json',
       'User-Agent': req.get('User-Agent') || 'API-Gateway',
       'X-Forwarded-For': req.ip || req.connection.remoteAddress || '',
-      'X-Request-ID': req.headers['x-request-id'] as string || this.generateRequestId(),
+      'X-Request-ID': (req.headers['x-request-id'] as string) || this.generateRequestId(),
     };
 
     // Forward user info if authenticated
@@ -313,7 +321,7 @@ class ApiGatewayService {
   /**
    * Transform response
    */
-  private transformResponse(response: ServiceResponse, routeConfig: RouteConfig): ServiceResponse {
+  private transformResponse(response: ServiceResponse, _routeConfig: RouteConfig): ServiceResponse {
     // Add gateway metadata
     const transformedData = {
       ...response.data,
@@ -333,11 +341,11 @@ class ApiGatewayService {
   /**
    * Log request
    */
-  private logRequest(req: Request, response: ServiceResponse, routeConfig: RouteConfig): void {
-    logger.info('API Gateway request', {
+  private logRequest(req: Request, response: ServiceResponse, _routeConfig: RouteConfig): void {
+    logger.info({
       method: req.method,
       path: req.path,
-      service: routeConfig.service,
+      service: response.service,
       statusCode: response.status,
       responseTime: response.responseTime,
       userAgent: req.get('User-Agent'),
@@ -372,8 +380,8 @@ class ApiGatewayService {
    */
   private groupRoutesByService(routes: RouteConfig[]): Record<string, number> {
     const grouped: Record<string, number> = {};
-    
-    routes.forEach(route => {
+
+    routes.forEach((route) => {
       grouped[route.service] = (grouped[route.service] || 0) + 1;
     });
 
@@ -385,8 +393,8 @@ class ApiGatewayService {
    */
   async healthCheck(): Promise<Record<string, any>> {
     const services = serviceDiscoveryService.getAllServices();
-    const healthyServices = services.filter(s => s.health === 'healthy');
-    
+    const healthyServices = services.filter((s) => s.health === 'healthy');
+
     return {
       status: healthyServices.length > 0 ? 'healthy' : 'unhealthy',
       totalServices: services.length,
@@ -401,8 +409,8 @@ class ApiGatewayService {
    */
   getServiceEndpoints(): Record<string, string[]> {
     const endpoints: Record<string, string[]> = {};
-    
-    Array.from(this.routes.values()).forEach(route => {
+
+    Array.from(this.routes.values()).forEach((route) => {
       if (!endpoints[route.service]) {
         endpoints[route.service] = [];
       }

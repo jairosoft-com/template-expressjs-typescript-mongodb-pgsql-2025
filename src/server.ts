@@ -9,10 +9,15 @@ import { connectMongo, closeMongo } from '@/database/mongo';
 import { connectRedis, closeRedis } from '@/database/redis';
 import { errorMiddleware } from '@common/middleware/error.middleware';
 import { ApiError } from '@common/utils/ApiError';
-import userRouter from '@components/users/users.routes';
-import healthRouter from '@components/health/health.routes';
+import { componentRegistry } from '@common/core/ComponentRegistry';
+import { join } from 'path';
 import { setupSwagger } from '@/config/swagger';
-import { requestLogger, responseLogger, errorLogger, performanceMonitor } from '@common/middleware/logging.middleware';
+import {
+  requestLogger,
+  responseLogger,
+  errorLogger,
+  performanceMonitor,
+} from '@common/middleware/logging.middleware';
 
 // Phase 5: Real-time Features
 import { socketService } from '@/services/socket.service';
@@ -115,9 +120,7 @@ app.get('/', (_req: Request, res: Response) => {
 app.use('/api/v1/users/login', authLimiter);
 app.use('/api/v1/users/register', authLimiter);
 
-// API Routes
-app.use('/api/v1/users', userRouter);
-app.use('/api/v1/health', healthRouter);
+// Component auto-discovery and route mounting will happen in startServer
 
 // Phase 5: API Gateway routing
 app.use('/api/v1/gateway', (req: Request, res: Response, next: NextFunction) => {
@@ -145,9 +148,21 @@ const startServer = async () => {
       logger.info('Skipping database connections (SKIP_DB_CONNECTION=true)');
     }
 
+    // Auto-discover and register components
+    logger.info('Discovering components...');
+    const componentsPath = join(__dirname, 'components');
+    await componentRegistry.autoDiscover(componentsPath);
+
+    // Initialize all components
+    await componentRegistry.initializeAll();
+
+    // Mount component routes
+    componentRegistry.mountRoutes(app);
+    logger.info(`Mounted ${componentRegistry.getStats().total} components`);
+
     // Phase 5: Initialize services
     logger.info('Initializing Phase 5 services...');
-    
+
     // Initialize OAuth service
     oauthService.initialize();
     logger.info('OAuth service initialized');
@@ -179,7 +194,9 @@ const startServer = async () => {
       logger.info(`Server running on port ${config.port} in ${config.nodeEnv} mode`);
       logger.info(`API Documentation available at http://localhost:${config.port}/api-docs`);
       logger.info(`Health check available at http://localhost:${config.port}/api/v1/health`);
-      logger.info(`Readiness probe available at http://localhost:${config.port}/api/v1/health/ready`);
+      logger.info(
+        `Readiness probe available at http://localhost:${config.port}/api/v1/health/ready`
+      );
       logger.info(`Liveness probe available at http://localhost:${config.port}/api/v1/health/live`);
       logger.info(`WebSocket available at ws://localhost:${config.port}`);
       logger.info(`OAuth providers: ${oauthService.getAvailableProviders().join(', ')}`);
@@ -192,17 +209,24 @@ const startServer = async () => {
     // Graceful shutdown handler
     const shutdown = async (signal: string) => {
       logger.info(`${signal} received. Shutting down gracefully...`);
-      
+
       // Emit system shutdown event
       await eventService.emitEvent('system.shutdown', {
         signal,
         timestamp: new Date().toISOString(),
       });
-      
+
       // Stop accepting new requests
       server.close(async () => {
         logger.info('HTTP server closed');
-        
+
+        // Shutdown all components
+        try {
+          await componentRegistry.shutdownAll();
+        } catch (error) {
+          logger.error({ error }, 'Error shutting down components');
+        }
+
         // Close database connections
         try {
           await closePostgres();
@@ -210,13 +234,13 @@ const startServer = async () => {
           await closeRedis();
           logger.info('All database connections closed');
         } catch (error) {
-          logger.error('Error closing database connections:', error);
+          logger.error({ error }, 'Error closing database connections');
         }
-        
+
         // Stop services
         serviceDiscoveryService.stop();
         logger.info('Service discovery stopped');
-        
+
         process.exit(0);
       });
 
@@ -233,33 +257,55 @@ const startServer = async () => {
 
     // Handle uncaught exceptions
     process.on('uncaughtException', (error) => {
-      logger.error('Uncaught Exception:', error);
-      
+      // Check if it's an operational error
+      if (ApiError.isOperationalError(error)) {
+        logger.error({ err: error }, 'Operational error (uncaught)');
+      } else {
+        // Programming error - should restart
+        logger.fatal({ err: error }, 'FATAL: Uncaught Exception - Programming Error');
+      }
+
       // Emit system error event
       eventService.emitEvent('system.error', {
         error: error.message,
         stack: error.stack,
+        isOperational: ApiError.isOperationalError(error),
         timestamp: new Date().toISOString(),
       });
-      
+
+      // Always shutdown for uncaught exceptions
       shutdown('uncaughtException');
     });
 
     // Handle unhandled promise rejections
     process.on('unhandledRejection', (reason, promise) => {
-      logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-      
+      // Convert reason to Error if it's not already
+      const error = reason instanceof Error ? reason : new Error(String(reason));
+
+      // Check if it's an operational error
+      if (ApiError.isOperationalError(error)) {
+        logger.error({ err: error, promise }, 'Operational error (unhandled rejection)');
+      } else {
+        // Programming error - should restart
+        logger.fatal(
+          { err: error, promise },
+          'FATAL: Unhandled Promise Rejection - Programming Error'
+        );
+      }
+
       // Emit system error event
       eventService.emitEvent('system.error', {
-        error: reason instanceof Error ? reason.message : String(reason),
+        error: 'Unhandled Promise Rejection',
+        reason: error.message,
+        isOperational: ApiError.isOperationalError(error),
         timestamp: new Date().toISOString(),
       });
-      
+
+      // Always shutdown for unhandled rejections
       shutdown('unhandledRejection');
     });
-
   } catch (error) {
-    logger.error('Failed to start server:', error);
+    logger.error({ error }, 'Failed to start server');
     process.exit(1);
   }
 };

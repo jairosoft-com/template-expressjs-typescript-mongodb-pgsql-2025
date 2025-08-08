@@ -28,7 +28,7 @@ export const connectMongo = async (): Promise<void> => {
   }
 
   try {
-    await mongoConnection.connect(config.mongo.url, {
+    await mongoConnection.connect(config.mongo.uri, {
       maxPoolSize: 10, // Maintain up to 10 socket connections
       serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
       socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
@@ -36,7 +36,7 @@ export const connectMongo = async (): Promise<void> => {
     });
     logger.info('Successfully connected to MongoDB');
   } catch (error) {
-    logger.error('Failed to connect to MongoDB:', error);
+    logger.error({ error }, 'Failed to connect to MongoDB');
     throw error;
   }
 };
@@ -52,7 +52,7 @@ export const checkMongoHealth = async (): Promise<boolean> => {
     }
     return false;
   } catch (error) {
-    logger.error('MongoDB health check failed:', error);
+    logger.error({ error }, 'MongoDB health check failed');
     return false;
   }
 };
@@ -67,7 +67,7 @@ export const closeMongo = async (): Promise<void> => {
       logger.info('MongoDB connection closed gracefully');
     }
   } catch (error) {
-    logger.error('Error closing MongoDB connection:', error);
+    logger.error({ error }, 'Error closing MongoDB connection');
   }
 };
 
@@ -77,7 +77,7 @@ mongoConnection.connection.on('connected', () => {
 });
 
 mongoConnection.connection.on('error', (err) => {
-  logger.error('MongoDB connection error:', err);
+  logger.error({ err }, 'MongoDB connection error');
 });
 
 mongoConnection.connection.on('disconnected', () => {

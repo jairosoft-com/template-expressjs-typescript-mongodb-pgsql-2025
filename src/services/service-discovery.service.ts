@@ -42,9 +42,11 @@ class ServiceDiscoveryService extends EventEmitter {
     };
 
     this.services[serviceInfo.id] = service;
-    
-    logger.info(`Service registered: ${serviceInfo.name} (${serviceInfo.id}) at ${serviceInfo.host}:${serviceInfo.port}`);
-    
+
+    logger.info(
+      `Service registered: ${serviceInfo.name} (${serviceInfo.id}) at ${serviceInfo.host}:${serviceInfo.port}`
+    );
+
     // Emit service registration event
     eventService.emitEvent('service.registered', {
       serviceId: serviceInfo.id,
@@ -63,9 +65,9 @@ class ServiceDiscoveryService extends EventEmitter {
     const service = this.services[serviceId];
     if (service) {
       delete this.services[serviceId];
-      
+
       logger.info(`Service deregistered: ${service.name} (${serviceId})`);
-      
+
       // Emit service deregistration event
       eventService.emitEvent('service.deregistered', {
         serviceId,
@@ -95,10 +97,12 @@ class ServiceDiscoveryService extends EventEmitter {
     if (service) {
       const previousHealth = service.health;
       service.health = health;
-      
+
       if (previousHealth !== health) {
-        logger.info(`Service health changed: ${service.name} (${serviceId}) ${previousHealth} -> ${health}`);
-        
+        logger.info(
+          `Service health changed: ${service.name} (${serviceId}) ${previousHealth} -> ${health}`
+        );
+
         // Emit health change event
         eventService.emitEvent('service.health_changed', {
           serviceId,
@@ -130,22 +134,25 @@ class ServiceDiscoveryService extends EventEmitter {
    * Get services by name
    */
   getServicesByName(name: string): ServiceInfo[] {
-    return Object.values(this.services).filter(service => service.name === name);
+    return Object.values(this.services).filter((service) => service.name === name);
   }
 
   /**
    * Get healthy services by name
    */
   getHealthyServicesByName(name: string): ServiceInfo[] {
-    return this.getServicesByName(name).filter(service => service.health === 'healthy');
+    return this.getServicesByName(name).filter((service) => service.health === 'healthy');
   }
 
   /**
    * Get service endpoint for load balancing
    */
-  getServiceEndpoint(serviceName: string, loadBalancingStrategy: 'round-robin' | 'least-connections' | 'random' = 'round-robin'): string | null {
+  getServiceEndpoint(
+    serviceName: string,
+    loadBalancingStrategy: 'round-robin' | 'least-connections' | 'random' = 'round-robin'
+  ): string | null {
     const healthyServices = this.getHealthyServicesByName(serviceName);
-    
+
     if (healthyServices.length === 0) {
       return null;
     }
@@ -220,16 +227,18 @@ class ServiceDiscoveryService extends EventEmitter {
    */
   private async performHealthChecks(): Promise<void> {
     const now = new Date();
-    
+
     for (const [serviceId, service] of Object.entries(this.services)) {
       const timeSinceLastHeartbeat = now.getTime() - service.lastHeartbeat.getTime();
-      
+
       if (timeSinceLastHeartbeat > this.serviceTimeoutMs) {
         // Service is considered unhealthy
         this.updateServiceHealth(serviceId, 'unhealthy');
-        
-        logger.warn(`Service ${service.name} (${serviceId}) is unhealthy - no heartbeat for ${timeSinceLastHeartbeat}ms`);
-        
+
+        logger.warn(
+          `Service ${service.name} (${serviceId}) is unhealthy - no heartbeat for ${timeSinceLastHeartbeat}ms`
+        );
+
         // Emit service unhealthy event
         eventService.emitEvent('service.unhealthy', {
           serviceId,
@@ -239,7 +248,7 @@ class ServiceDiscoveryService extends EventEmitter {
       } else if (timeSinceLastHeartbeat > this.heartbeatIntervalMs * 2) {
         // Service is degraded
         this.updateServiceHealth(serviceId, 'degraded');
-        
+
         logger.warn(`Service ${service.name} (${serviceId}) is degraded - delayed heartbeat`);
       } else {
         // Service is healthy
@@ -253,9 +262,9 @@ class ServiceDiscoveryService extends EventEmitter {
    */
   getStatistics(): Record<string, any> {
     const services = Object.values(this.services);
-    const healthyServices = services.filter(s => s.health === 'healthy');
-    const unhealthyServices = services.filter(s => s.health === 'unhealthy');
-    const degradedServices = services.filter(s => s.health === 'degraded');
+    const healthyServices = services.filter((s) => s.health === 'healthy');
+    const unhealthyServices = services.filter((s) => s.health === 'unhealthy');
+    const degradedServices = services.filter((s) => s.health === 'degraded');
 
     return {
       totalServices: services.length,
@@ -272,8 +281,8 @@ class ServiceDiscoveryService extends EventEmitter {
    */
   private getServicesByType(): Record<string, number> {
     const serviceTypes: Record<string, number> = {};
-    
-    Object.values(this.services).forEach(service => {
+
+    Object.values(this.services).forEach((service) => {
       const type = service.name.split('-')[0] || 'unknown';
       serviceTypes[type] = (serviceTypes[type] || 0) + 1;
     });
@@ -315,13 +324,13 @@ class ServiceDiscoveryService extends EventEmitter {
 
     for (const [serviceId, service] of Object.entries(this.services)) {
       const timeSinceLastHeartbeat = now.getTime() - service.lastHeartbeat.getTime();
-      
+
       if (timeSinceLastHeartbeat > this.serviceTimeoutMs * 2) {
         expiredServices.push(serviceId);
       }
     }
 
-    expiredServices.forEach(serviceId => {
+    expiredServices.forEach((serviceId) => {
       this.deregisterService(serviceId);
       logger.info(`Expired service removed: ${serviceId}`);
     });
