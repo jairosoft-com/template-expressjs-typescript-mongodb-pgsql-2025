@@ -35,7 +35,10 @@ interface LiveUpdate {
 export interface ISocketService {
   io: SocketIOServer | null;
   broadcastUserStatus(userId: string, status: 'online' | 'offline'): void;
-  sendNotification(userId: string, notification: Omit<Notification, 'id' | 'userId' | 'read' | 'createdAt'>): void;
+  sendNotification(
+    userId: string,
+    notification: Omit<Notification, 'id' | 'userId' | 'read' | 'createdAt'>
+  ): void;
   broadcastLiveUpdate(update: Omit<LiveUpdate, 'id' | 'timestamp'>): void;
 }
 
@@ -484,7 +487,7 @@ class SocketService implements ISocketService {
 
     // Store the update
     this.liveUpdates.push(liveUpdate);
-    
+
     // Keep only last 100 updates
     if (this.liveUpdates.length > 100) {
       this.liveUpdates.shift();
@@ -492,7 +495,7 @@ class SocketService implements ISocketService {
 
     // Broadcast to all connected clients
     this.io?.emit('live_update', liveUpdate);
-    
+
     logger.info({ updateType: update.type }, 'Live update broadcasted');
   }
 }

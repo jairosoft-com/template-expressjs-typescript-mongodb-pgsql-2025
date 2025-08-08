@@ -10,11 +10,11 @@ import { mockUserRepository } from './mock.user.repository';
 function formatUserName(firstName?: string | null, lastName?: string | null): string {
   const first = firstName?.trim() || '';
   const last = lastName?.trim() || '';
-  
+
   if (first && last) {
     return `${first} ${last}`;
   }
-  
+
   return first || last || 'Unknown User';
 }
 
