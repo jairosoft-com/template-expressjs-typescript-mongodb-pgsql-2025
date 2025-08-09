@@ -8,15 +8,15 @@ test.describe('User API E2E Tests', () => {
           name: 'E2E Test User',
           email: `e2e.test.${Date.now()}@example.com`,
           password: 'password123',
-        }
+        },
       };
 
       const response = await request.post('/api/v1/users/register', {
-        data: userData
+        data: userData,
       });
 
       expect(response.status()).toBe(201);
-      
+
       const responseBody = await response.json();
       expect(responseBody.message).toBe('User registered successfully');
       expect(responseBody.data).toBeDefined();
@@ -31,21 +31,21 @@ test.describe('User API E2E Tests', () => {
           name: 'Duplicate User',
           email: 'duplicate@example.com',
           password: 'password123',
-        }
+        },
       };
 
       // First registration should succeed
       await request.post('/api/v1/users/register', {
-        data: userData
+        data: userData,
       });
 
       // Second registration with same email should fail
       const response = await request.post('/api/v1/users/register', {
-        data: userData
+        data: userData,
       });
 
       expect(response.status()).toBe(409);
-      
+
       const responseBody = await response.json();
       expect(responseBody.status).toBe('error');
       expect(responseBody.message).toContain('Email already in use');
@@ -57,26 +57,26 @@ test.describe('User API E2E Tests', () => {
           name: '',
           email: 'invalid-email',
           password: '123',
-        }
+        },
       };
 
       const response = await request.post('/api/v1/users/register', {
-        data: invalidData
+        data: invalidData,
       });
 
       expect(response.status()).toBe(400);
-      
+
       const responseBody = await response.json();
       expect(responseBody.status).toBe('error');
     });
 
     test('should return 400 for missing required fields', async ({ request }) => {
       const response = await request.post('/api/v1/users/register', {
-        data: {}
+        data: {},
       });
 
       expect(response.status()).toBe(400);
-      
+
       const responseBody = await response.json();
       expect(responseBody.status).toBe('error');
     });
@@ -90,12 +90,12 @@ test.describe('User API E2E Tests', () => {
           name: 'Login Test User',
           email: `login.test.${timestamp}@example.com`,
           password: 'password123',
-        }
+        },
       };
 
       // First register the user
       await request.post('/api/v1/users/register', {
-        data: userData
+        data: userData,
       });
 
       // Then try to login
@@ -103,15 +103,15 @@ test.describe('User API E2E Tests', () => {
         body: {
           email: userData.body.email,
           password: userData.body.password,
-        }
+        },
       };
 
       const response = await request.post('/api/v1/users/login', {
-        data: loginData
+        data: loginData,
       });
 
       expect(response.status()).toBe(200);
-      
+
       const responseBody = await response.json();
       expect(responseBody.message).toBe('Login successful');
       expect(responseBody.data).toBeDefined();
@@ -125,15 +125,15 @@ test.describe('User API E2E Tests', () => {
         body: {
           email: 'nonexistent@example.com',
           password: 'wrongpassword',
-        }
+        },
       };
 
       const response = await request.post('/api/v1/users/login', {
-        data: loginData
+        data: loginData,
       });
 
       expect(response.status()).toBe(401);
-      
+
       const responseBody = await response.json();
       expect(responseBody.status).toBe('error');
       expect(responseBody.message).toContain('Invalid credentials');
@@ -144,15 +144,15 @@ test.describe('User API E2E Tests', () => {
         body: {
           email: 'invalid-email',
           password: 'password123',
-        }
+        },
       };
 
       const response = await request.post('/api/v1/users/login', {
-        data: loginData
+        data: loginData,
       });
 
       expect(response.status()).toBe(400);
-      
+
       const responseBody = await response.json();
       expect(responseBody.status).toBe('error');
     });
@@ -163,7 +163,7 @@ test.describe('User API E2E Tests', () => {
       const response = await request.get('/');
 
       expect(response.status()).toBe(200);
-      
+
       const responseBody = await response.json();
       expect(responseBody.message).toBe('API is healthy');
       expect(responseBody.timestamp).toBeDefined();
@@ -174,7 +174,7 @@ test.describe('User API E2E Tests', () => {
       const response = await request.get('/api/v1/health');
 
       expect(response.status()).toBe(200);
-      
+
       const responseBody = await response.json();
       expect(responseBody.status).toBe('healthy');
       expect(responseBody.timestamp).toBeDefined();
@@ -184,7 +184,7 @@ test.describe('User API E2E Tests', () => {
       const response = await request.get('/api/v1/health/ready');
 
       expect(response.status()).toBe(200);
-      
+
       const responseBody = await response.json();
       expect(responseBody.ready).toBeDefined();
     });
@@ -193,7 +193,7 @@ test.describe('User API E2E Tests', () => {
       const response = await request.get('/api/v1/health/live');
 
       expect(response.status()).toBe(200);
-      
+
       const responseBody = await response.json();
       expect(responseBody.alive).toBe(true);
     });
@@ -204,7 +204,7 @@ test.describe('User API E2E Tests', () => {
       const response = await request.get('/api-docs/');
 
       expect(response.status()).toBe(200);
-      
+
       const contentType = response.headers()['content-type'];
       expect(contentType).toContain('text/html');
     });

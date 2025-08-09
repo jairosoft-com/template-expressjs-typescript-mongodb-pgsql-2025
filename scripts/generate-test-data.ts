@@ -1,7 +1,7 @@
 import { faker } from '@faker-js/faker';
 import fs from 'fs';
 import path from 'path';
-import logger from '../src/utils/logger';
+import logger from '../src/common/utils/logger.js';
 
 interface TestUser {
   email: string;

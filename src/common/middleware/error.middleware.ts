@@ -23,7 +23,7 @@ export const errorMiddleware = (error: Error, req: Request, res: Response, _next
   }
 
   // Get child logger from request or create new one
-  const childLogger = req.logger || createChildLogger(req.requestId || 'unknown');
+  const childLogger = req?.logger || createChildLogger(req?.requestId || 'unknown');
 
   // Log the error for debugging
   childLogger.error(

@@ -7,9 +7,14 @@ npx lint-staged
 echo "Running type check..."
 npm run type-check
 
-# Run unit tests for changed files
-echo "Running tests for changed files..."
-npm test -- --findRelatedTests --passWithNoTests
+# Run related tests only for changed source/test files
+echo "Running related tests for changed files..."
+CHANGED_FILES=$(git diff --cached --name-only --diff-filter=ACMRTUXB | grep -E '\.(ts|tsx|js|jsx)$' || true)
+if [ -n "$CHANGED_FILES" ]; then
+  echo "$CHANGED_FILES" | xargs npx jest --runInBand --findRelatedTests --passWithNoTests || exit 1
+else
+  echo "No testable file changes detected; skipping related tests."
+fi
 
 # Check for console.log statements in staged files
 echo "Checking for console.log statements..."

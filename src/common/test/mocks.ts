@@ -5,6 +5,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import { Logger } from 'pino';
+import { jest } from '@jest/globals';
 
 /**
  * Create a mock Prisma client
@@ -75,21 +76,21 @@ export function createMockPrismaClient(): jest.Mocked<PrismaClient> {
  */
 export function createMockRedisClient() {
   return {
-    connect: jest.fn().mockResolvedValue(undefined),
-    disconnect: jest.fn().mockResolvedValue(undefined),
-    get: jest.fn().mockResolvedValue(null),
-    set: jest.fn().mockResolvedValue('OK'),
-    setEx: jest.fn().mockResolvedValue('OK'),
-    del: jest.fn().mockResolvedValue(1),
-    exists: jest.fn().mockResolvedValue(0),
-    expire: jest.fn().mockResolvedValue(1),
-    ttl: jest.fn().mockResolvedValue(-1),
-    keys: jest.fn().mockResolvedValue([]),
-    flushAll: jest.fn().mockResolvedValue('OK'),
-    ping: jest.fn().mockResolvedValue('PONG'),
-    publish: jest.fn().mockResolvedValue(1),
-    subscribe: jest.fn().mockResolvedValue(undefined),
-    unsubscribe: jest.fn().mockResolvedValue(undefined),
+    connect: jest.fn(() => Promise.resolve()),
+    disconnect: jest.fn(() => Promise.resolve()),
+    get: jest.fn(() => Promise.resolve(null)),
+    set: jest.fn(() => Promise.resolve('OK')),
+    setEx: jest.fn(() => Promise.resolve('OK')),
+    del: jest.fn(() => Promise.resolve(1)),
+    exists: jest.fn(() => Promise.resolve(0)),
+    expire: jest.fn(() => Promise.resolve(1)),
+    ttl: jest.fn(() => Promise.resolve(-1)),
+    keys: jest.fn(() => Promise.resolve([])),
+    flushAll: jest.fn(() => Promise.resolve('OK')),
+    ping: jest.fn(() => Promise.resolve('PONG')),
+    publish: jest.fn(() => Promise.resolve(1)),
+    subscribe: jest.fn(() => Promise.resolve()),
+    unsubscribe: jest.fn(() => Promise.resolve()),
   };
 }
 

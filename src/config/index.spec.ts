@@ -111,10 +111,18 @@ describe('Configuration Module', () => {
       process.env.NODE_ENV = 'test';
       process.env.JWT_SECRET = 'short-secret';
 
+      // Mock process.exit to prevent actual exit
+      const mockExit = jest.spyOn(process, 'exit').mockImplementation((code?: any) => {
+        throw new Error(`process.exit called with code ${code}`);
+      });
+
       // Act & Assert
       expect(() => {
         require('./index');
-      }).toThrow();
+      }).toThrow('process.exit called with code 1');
+
+      // Cleanup
+      mockExit.mockRestore();
     });
   });
 });

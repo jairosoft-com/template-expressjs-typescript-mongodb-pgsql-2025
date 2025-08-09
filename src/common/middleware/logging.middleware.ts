@@ -60,7 +60,7 @@ const extractUserId = (req: Request): string | undefined => {
       return 'user_id_from_token';
     }
     return undefined;
-  } catch (error) {
+  } catch (_error) {
     return undefined;
   }
 };

@@ -15,8 +15,8 @@ const createMockComponent = (
     version,
     router,
     basePath: `/api/v${version}/${name}`,
-    initialize: jest.fn().mockResolvedValue(undefined),
-    shutdown: jest.fn().mockResolvedValue(undefined),
+    initialize: jest.fn(() => Promise.resolve()),
+    shutdown: jest.fn(() => Promise.resolve()),
     getDependencies: () => dependencies,
   } as any;
 };

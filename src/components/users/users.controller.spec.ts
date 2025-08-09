@@ -80,7 +80,7 @@ describe('User Controller', () => {
 
       // The actual error will be a ZodError from parsing
       expect(mockNext).toHaveBeenCalled();
-      const error = mockNext.mock.calls[0][0];
+      const error = (mockNext as jest.Mock).mock.calls[0][0];
       expect(error).toBeInstanceOf(ZodError);
       expect(mockResponse.status).not.toHaveBeenCalled();
       expect(mockResponse.json).not.toHaveBeenCalled();
@@ -153,7 +153,7 @@ describe('User Controller', () => {
 
       // The actual error will be a ZodError from parsing
       expect(mockNext).toHaveBeenCalled();
-      const error = mockNext.mock.calls[0][0];
+      const error = (mockNext as jest.Mock).mock.calls[0][0];
       expect(error).toBeInstanceOf(ZodError);
     });
 
@@ -185,7 +185,7 @@ describe('User Controller', () => {
 
       // Should pass the ZodError to the next middleware
       expect(mockNext).toHaveBeenCalled();
-      const error = mockNext.mock.calls[0][0];
+      const error = (mockNext as jest.Mock).mock.calls[0][0];
       expect(error).toBeInstanceOf(ZodError);
     });
 

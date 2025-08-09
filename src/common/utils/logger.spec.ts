@@ -1,5 +1,4 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
-import pino from 'pino';
 
 describe('Pino Logger Configuration', () => {
   let originalEnv: NodeJS.ProcessEnv;
@@ -87,17 +86,6 @@ describe('Pino Logger Configuration', () => {
     it('should redact password fields', () => {
       const logger = require('./logger').default;
 
-      // Create a logger with redaction paths
-      const testData = {
-        user: 'john',
-        password: 'secret123',
-        data: {
-          nested: {
-            password: 'another-secret',
-          },
-        },
-      };
-
       // The logger should be configured to redact sensitive fields
       // This would be verified by checking the actual configuration
       expect(logger).toBeDefined();
@@ -106,25 +94,12 @@ describe('Pino Logger Configuration', () => {
     it('should redact authorization headers', () => {
       const logger = require('./logger').default;
 
-      const testData = {
-        headers: {
-          authorization: 'Bearer token123',
-          'content-type': 'application/json',
-        },
-      };
-
       // The logger should be configured to redact authorization headers
       expect(logger).toBeDefined();
     });
 
     it('should redact JWT tokens', () => {
       const logger = require('./logger').default;
-
-      const testData = {
-        token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-        refreshToken: 'refresh-token-value',
-        data: 'non-sensitive',
-      };
 
       // The logger should be configured to redact tokens
       expect(logger).toBeDefined();
@@ -133,11 +108,11 @@ describe('Pino Logger Configuration', () => {
 
   describe('Log Methods', () => {
     let logger: any;
-    let infoSpy: jest.SpyInstance;
-    let errorSpy: jest.SpyInstance;
-    let warnSpy: jest.SpyInstance;
-    let debugSpy: jest.SpyInstance;
-    let fatalSpy: jest.SpyInstance;
+    let infoSpy: any;
+    let errorSpy: any;
+    let warnSpy: any;
+    let debugSpy: any;
+    let fatalSpy: any;
 
     beforeEach(() => {
       logger = require('./logger').default;

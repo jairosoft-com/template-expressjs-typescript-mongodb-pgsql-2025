@@ -6,6 +6,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import config from '@/config';
+import { jest, expect } from '@jest/globals';
 
 /**
  * Create a mock Express request object
@@ -31,14 +32,14 @@ export function createMockRequest(overrides: Partial<Request> = {}): Partial<Req
  */
 export function createMockResponse(): Partial<Response> {
   const res: Partial<Response> = {
-    status: jest.fn().mockReturnThis(),
-    json: jest.fn().mockReturnThis(),
-    send: jest.fn().mockReturnThis(),
-    cookie: jest.fn().mockReturnThis(),
-    clearCookie: jest.fn().mockReturnThis(),
-    redirect: jest.fn().mockReturnThis(),
-    set: jest.fn().mockReturnThis(),
-    setHeader: jest.fn().mockReturnThis(),
+    status: jest.fn().mockReturnThis() as any,
+    json: jest.fn().mockReturnThis() as any,
+    send: jest.fn().mockReturnThis() as any,
+    cookie: jest.fn().mockReturnThis() as any,
+    clearCookie: jest.fn().mockReturnThis() as any,
+    redirect: jest.fn().mockReturnThis() as any,
+    set: jest.fn().mockReturnThis() as any,
+    setHeader: jest.fn().mockReturnThis() as any,
     locals: {},
   };
   return res;
@@ -158,7 +159,8 @@ export function restoreDate(): void {
  */
 export function getErrorMessage(res: Partial<Response>): string | undefined {
   const jsonCall = (res.json as jest.Mock).mock.calls[0];
-  return jsonCall?.[0]?.error?.message;
+  const response = jsonCall?.[0] as any;
+  return response?.error?.message;
 }
 
 /**
@@ -166,5 +168,6 @@ export function getErrorMessage(res: Partial<Response>): string | undefined {
  */
 export function getResponseData(res: Partial<Response>): any {
   const jsonCall = (res.json as jest.Mock).mock.calls[0];
-  return jsonCall?.[0]?.data;
+  const response = jsonCall?.[0] as any;
+  return response?.data;
 }

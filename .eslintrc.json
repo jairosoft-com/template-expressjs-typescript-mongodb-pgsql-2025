@@ -1,43 +1,44 @@
 {
   "root": true,
-  "env": {
-    "node": true,
-    "es2022": true,
-    "jest": true
-  },
-  "extends": [
-    "eslint:recommended",
-    "plugin:@typescript-eslint/recommended",
-    "plugin:prettier/recommended"
-  ],
   "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
   "parserOptions": {
     "ecmaVersion": 2022,
-    "sourceType": "module",
-    "project": "./tsconfig.json"
+    "sourceType": "module"
   },
-  "plugins": ["@typescript-eslint", "prettier"],
-  "rules": {
-    "@typescript-eslint/no-explicit-any": "warn",
-    "@typescript-eslint/no-unused-vars": [
-      "error",
-      {
-        "argsIgnorePattern": "^_",
-        "varsIgnorePattern": "^_"
+  "overrides": [
+    {
+      "files": ["*.ts", "*.tsx"],
+      "extends": ["plugin:@typescript-eslint/recommended"],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "warn",
+        "@typescript-eslint/no-unused-vars": [
+          "error",
+          {
+            "argsIgnorePattern": "^_",
+            "varsIgnorePattern": "^_",
+            "caughtErrorsIgnorePattern": "^_",
+            "destructuredArrayIgnorePattern": "^_",
+            "ignoreRestSiblings": true
+          }
+        ],
+        "@typescript-eslint/no-require-imports": "off",
+        "no-console": ["warn", { "allow": ["warn", "error", "info"] }]
       }
-    ],
-    "@typescript-eslint/no-require-imports": "off",
-    "prettier/prettier": "error",
-    "no-console": ["warn", { "allow": ["warn", "error", "info"] }]
-  },
+    }
+  ],
   "ignorePatterns": [
-    "dist/",
-    "node_modules/",
-    "coverage/",
+    "dist",
+    "node_modules",
+    "coverage",
     "*.js",
     "*.d.ts",
+    "*.js.map",
     "playwright.config.ts",
     "jest.config.ts",
-    "eslint.config.js"
+    "eslint.config.js",
+    "prisma/**",
+    "scripts/**",
+    "e2e/**"
   ]
 }

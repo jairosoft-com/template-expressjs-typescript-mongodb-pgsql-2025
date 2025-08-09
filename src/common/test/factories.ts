@@ -45,8 +45,8 @@ export function createTestUser(overrides: Partial<User> = {}): User {
  */
 export function createTestUserPublic(overrides: Partial<User> = {}) {
   const user = createTestUser(overrides);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { password, twoFactorSecret, ...publicUser } = user;
+
+  const { password: _password, twoFactorSecret: _twoFactorSecret, ...publicUser } = user;
   return publicUser;
 }
 

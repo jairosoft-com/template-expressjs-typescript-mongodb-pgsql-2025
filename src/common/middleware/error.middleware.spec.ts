@@ -82,15 +82,18 @@ describe('Error Middleware', () => {
     it('should handle ZodError correctly', () => {
       const zodError = new ZodError([
         {
-          code: 'invalid_string',
+          code: 'invalid_type' as any,
           message: 'Invalid email',
           path: ['body', 'email'],
-        },
+        } as any,
         {
           code: 'too_small',
           message: 'Password must be at least 8 characters',
           path: ['body', 'password'],
-        },
+          minimum: 8,
+          type: 'string',
+          inclusive: true,
+        } as any,
       ]);
 
       errorMiddleware(zodError, mockRequest as Request, mockResponse as Response, mockNext);
@@ -106,10 +109,10 @@ describe('Error Middleware', () => {
     it('should handle ZodError with single field error', () => {
       const zodError = new ZodError([
         {
-          code: 'invalid_string',
+          code: 'invalid_type' as any,
           message: 'Invalid email',
           path: ['body', 'email'],
-        },
+        } as any,
       ]);
 
       errorMiddleware(zodError, mockRequest as Request, mockResponse as Response, mockNext);
@@ -187,7 +190,7 @@ describe('Error Middleware', () => {
       const error = new Error('Test error');
       mockRequest.originalUrl = '/api/v1/users/login';
       mockRequest.method = 'POST';
-      mockRequest.ip = '192.168.1.1';
+      (mockRequest as any).ip = '192.168.1.1';
 
       errorMiddleware(error, mockRequest as Request, mockResponse as Response, mockNext);
 

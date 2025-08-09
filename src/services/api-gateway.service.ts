@@ -235,7 +235,7 @@ class ApiGatewayService {
       (req as any).user = decoded;
 
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

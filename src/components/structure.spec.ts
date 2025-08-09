@@ -56,10 +56,14 @@ describe('Directory Structure Compliance', () => {
       expect(fs.existsSync(utilsPath)).toBe(false);
     });
 
-    it('should NOT have types directory at root level', () => {
-      // Assert old types directory does not exist
+    it('should have types directory at root level for Express type extensions', () => {
+      // Assert types directory exists for Express type extensions
       const typesPath = path.join(srcPath, 'types');
-      expect(fs.existsSync(typesPath)).toBe(false);
+      expect(fs.existsSync(typesPath)).toBe(true);
+
+      // Verify it contains the Express type extension file
+      const expressTypesPath = path.join(typesPath, 'express.d.ts');
+      expect(fs.existsSync(expressTypesPath)).toBe(true);
     });
   });
 

@@ -7,7 +7,7 @@ export const mockUserRepository = {
   async findByEmail(email: string): Promise<UserPublicData | null> {
     for (const user of users.values()) {
       if (user.email === email) {
-        const { password, ...publicData } = user;
+        const { password: _password, ...publicData } = user;
         return publicData;
       }
     }
@@ -32,14 +32,16 @@ export const mockUserRepository = {
       updatedAt: new Date(),
     };
     users.set(id, user);
-    const { password, ...publicData } = user;
+
+    const { password: _password, ...publicData } = user;
     return publicData;
   },
 
   async findById(id: string): Promise<UserPublicData | null> {
     const user = users.get(id);
     if (!user) return null;
-    const { password, ...publicData } = user;
+
+    const { password: _password, ...publicData } = user;
     return publicData;
   },
 
@@ -50,7 +52,7 @@ export const mockUserRepository = {
     Object.assign(user, updateData, { updatedAt: new Date() });
     users.set(id, user);
 
-    const { password, ...publicData } = user;
+    const { password: _password, ...publicData } = user;
     return publicData;
   },
 
@@ -65,7 +67,7 @@ export const mockUserRepository = {
     const allUsers = Array.from(users.values());
     const paginatedUsers = allUsers.slice(skip, skip + limit);
     const publicUsers = paginatedUsers.map((user) => {
-      const { password, ...publicData } = user;
+      const { password: _password, ...publicData } = user;
       return publicData;
     });
 

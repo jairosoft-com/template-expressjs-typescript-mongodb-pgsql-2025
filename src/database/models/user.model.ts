@@ -49,7 +49,7 @@ const userSchema = new Schema<IUser>(
     },
     password: {
       type: String,
-      required: function (this: IUser) {
+      required: function () {
         // Password is required unless user is created via OAuth
         return !this.oauthProvider;
       },

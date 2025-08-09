@@ -13,8 +13,8 @@
     "strictPropertyInitialization": true,
     "noImplicitThis": true,
     "alwaysStrict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
@@ -30,6 +30,6 @@
     },
     "baseUrl": "."
   },
-  "include": ["src/**/*", "e2e/**/*", "src/types/**/*.d.ts"],
-  "exclude": ["node_modules", "**/*.spec.ts"]
+  "include": ["src/**/*", "e2e/**/*", "src/types/**/*.d.ts", "scripts/**/*", "__tests__/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

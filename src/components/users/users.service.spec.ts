@@ -36,8 +36,11 @@ describe('User Service', () => {
 
   const mockUserPublicData = {
     id: mockUser.id,
-    name: mockUser.name,
     email: mockUser.email,
+    firstName: 'Test',
+    lastName: 'User',
+    avatar: undefined,
+    emailVerified: false,
   };
 
   beforeEach(() => {

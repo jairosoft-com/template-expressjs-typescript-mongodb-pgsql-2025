@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
-import logger from '../src/utils/logger';
+import logger from '../src/common/utils/logger.js';
 
 interface SetupOptions {
   installDeps?: boolean;
@@ -30,12 +30,14 @@ const checkPackageManager = () => {
     const npmVersion = execSync('npm --version', { encoding: 'utf8' }).trim();
     logger.info(`npm version: ${npmVersion}`);
     return 'npm';
-  } catch (error) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (_error) {
     try {
       const yarnVersion = execSync('yarn --version', { encoding: 'utf8' }).trim();
       logger.info(`yarn version: ${yarnVersion}`);
       return 'yarn';
-    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_innerError) {
       logger.error('Neither npm nor yarn is installed. Please install one of them.');
       process.exit(1);
     }
@@ -53,7 +55,7 @@ const installDependencies = (packageManager: string) => {
     }
     logger.info('Dependencies installed successfully');
   } catch (error) {
-    logger.error('Failed to install dependencies:', error);
+    logger.error({ error }, 'Failed to install dependencies');
     process.exit(1);
   }
 };
@@ -115,12 +117,14 @@ const setupDocker = () => {
     try {
       execSync('docker-compose --version', { stdio: 'pipe' });
       logger.info('docker-compose is available');
-    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_error) {
       logger.warn(
         'docker-compose not found. Please install it if you want to use Docker services.'
       );
     }
-  } catch (error) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (_dockerError) {
     logger.warn(
       'Docker not found. Please install Docker if you want to use containerized services.'
     );
@@ -133,7 +137,8 @@ const runTests = () => {
   try {
     execSync('npm test', { stdio: 'inherit' });
     logger.info('All tests passed');
-  } catch (error) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (_error) {
     logger.error('Some tests failed. Please check the test output above.');
     process.exit(1);
   }
@@ -144,11 +149,12 @@ const seedDatabase = () => {
 
   try {
     // Import and run the seed function
-    const { seedDatabase: seedDb } = require('./seed-database');
-    seedDb();
+    import('./seed-database.js').then((module) => {
+      module.seedDatabase();
+    });
     logger.info('Database seeded successfully');
   } catch (error) {
-    logger.error('Failed to seed database:', error);
+    logger.error({ error }, 'Failed to seed database');
     logger.warn('You can run the seeding manually later with: npm run seed');
   }
 };
@@ -195,8 +201,8 @@ const setupDev = async (options: SetupOptions = {}) => {
   const {
     installDeps = true,
     setupEnv = true,
-    setupDocker = true,
-    runTests = true,
+    setupDocker: shouldSetupDocker = true,
+    runTests: shouldRunTests = true,
     seedDatabase: shouldSeed = false,
   } = options;
 
@@ -217,7 +223,7 @@ const setupDev = async (options: SetupOptions = {}) => {
   }
 
   // Setup Docker
-  if (setupDocker) {
+  if (shouldSetupDocker) {
     setupDocker();
   }
 
@@ -225,7 +231,7 @@ const setupDev = async (options: SetupOptions = {}) => {
   createGitHooks();
 
   // Run tests
-  if (runTests) {
+  if (shouldRunTests) {
     runTests();
   }
 

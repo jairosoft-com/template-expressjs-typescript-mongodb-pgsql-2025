@@ -131,7 +131,7 @@ export class ComponentRegistry implements IComponentRegistry {
         try {
           // Check if index.ts exists
           statSync(indexPath);
-        } catch (error) {
+        } catch (_error) {
           this.logger.debug(`Skipping ${dir}: No index.ts file found in component directory`);
           continue;
         }
