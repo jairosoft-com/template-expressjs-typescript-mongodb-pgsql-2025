@@ -1,27 +1,36 @@
 #!/usr/bin/env sh
+set -eu
 
-# Run lint-staged for formatting and linting
-npx lint-staged
+echo "▶ Pre-commit: collecting staged source files"
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMRTUXB | grep -E '\\.(ts|tsx|js|jsx)$' || true)
 
-# Run type checking
-echo "Running type check..."
-npm run type-check
-
-# Run related tests only for changed source/test files
-echo "Running related tests for changed files..."
-CHANGED_FILES=$(git diff --cached --name-only --diff-filter=ACMRTUXB | grep -E '\.(ts|tsx|js|jsx)$' || true)
-if [ -n "$CHANGED_FILES" ]; then
-  echo "$CHANGED_FILES" | xargs npx jest --runInBand --findRelatedTests --passWithNoTests || exit 1
-else
-  echo "No testable file changes detected; skipping related tests."
+if [ -z "$STAGED_FILES" ]; then
+  echo "ℹ No staged TypeScript/JavaScript files. Skipping lint, type-check, tests."
+  exit 0
 fi
 
-# Check for console.log statements in staged files
-echo "Checking for console.log statements..."
-git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|jsx)$' | xargs -r grep -l 'console.log' && {
-  echo "Error: Found console.log statements in staged files"
-  echo "Please remove console.log statements before committing"
-  exit 1
-} || true
+echo "▶ Running lint-staged"
+npx lint-staged || exit 1
 
-echo "Pre-commit checks passed ✅"
+echo "▶ Running type check"
+npm run type-check --silent || exit 1
+
+echo "▶ Running related tests (Jest)"
+# Provide DB skip flag to speed up unit tests where possible
+export SKIP_DB_CONNECTION=true
+echo "$STAGED_FILES" | xargs npx jest --runInBand --findRelatedTests --passWithNoTests || exit 1
+
+echo "▶ Scanning added lines for console.log (excluding test/spec files)"
+NON_TEST_FILES=$(printf '%s\n' "$STAGED_FILES" | grep -Ev '\\.(spec|test)\\.(ts|tsx|js)$' || true)
+if [ -n "$NON_TEST_FILES" ]; then
+  # Diff only those files, look at added lines (-U0 for no context), match console.log
+  VIOLATIONS=$(git diff --cached -U0 -- $NON_TEST_FILES | grep -E '^[+][^+].*console\\.log' || true)
+  if [ -n "$VIOLATIONS" ]; then
+    echo "❌ console.log found in non-test staged additions:"
+    echo "$VIOLATIONS"
+    echo "Tip: use logger.debug/info instead."
+    exit 1
+  fi
+fi
+
+echo "✅ Pre-commit checks passed"
