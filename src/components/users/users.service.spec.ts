@@ -49,10 +49,11 @@ describe('User Service', () => {
 
   describe('registerNewUser', () => {
     const registrationData = {
-      name: 'Test User',
+      firstName: 'Test',
+      lastName: 'User',
       email: 'test@example.com',
       password: 'password123',
-    };
+    } as any;
 
     it('should successfully register a new user', async () => {
       // Mock repository responses
@@ -78,7 +79,9 @@ describe('User Service', () => {
       expect(jwt.sign).toHaveBeenCalledWith(
         { userId: mockUserPublicData.id, email: mockUserPublicData.email },
         config.jwt.secret,
-        { expiresIn: config.jwt.expiresIn }
+        {
+          expiresIn: config.jwt.expiresIn,
+        }
       );
       expect(result).toEqual({
         user: mockUserPublicData,
@@ -128,7 +131,9 @@ describe('User Service', () => {
       expect(jwt.sign).toHaveBeenCalledWith(
         { userId: mockUser.id, email: mockUser.email },
         config.jwt.secret,
-        { expiresIn: config.jwt.expiresIn }
+        {
+          expiresIn: config.jwt.expiresIn,
+        }
       );
       expect(result).toEqual({
         user: mockUserPublicData,

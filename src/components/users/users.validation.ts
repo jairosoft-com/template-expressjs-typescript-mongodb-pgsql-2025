@@ -3,8 +3,8 @@ import { z } from 'zod';
 // Accept either firstName/lastName or a combined name for backward compatibility
 const NameFieldsSchema = z
   .object({
-    firstName: z.string().min(1, 'firstName must not be empty').optional(),
-    lastName: z.string().min(1, 'lastName must not be empty').optional(),
+    firstName: z.string().min(1, 'firstName is required').optional(),
+    lastName: z.string().min(1, 'lastName is required').optional(),
     name: z.string().min(2).optional(),
   })
   .refine(

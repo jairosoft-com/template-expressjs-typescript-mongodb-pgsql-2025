@@ -9,7 +9,9 @@ describe('ComponentRegistry auto-discovery', () => {
   const componentsRoot = path.join(__dirname, '..', 'src', 'components');
 
   beforeEach(async () => {
-    componentRegistry.clear();
+    // Clear any previously registered components
+    // @ts-ignore
+    (componentRegistry as any).components?.clear?.();
   });
 
   it('should auto-discover components from components directory', async () => {

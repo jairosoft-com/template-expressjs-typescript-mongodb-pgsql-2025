@@ -41,14 +41,10 @@ export class UserService extends BaseService {
       throw ApiError.conflict('Email already in use');
     }
 
-    // Normalize name fields with utility for better international support
-    const providedFirst = (userData as any).firstName as string | undefined;
-    const providedLast = (userData as any).lastName as string | undefined;
-    const providedName = (userData as any).name as string | undefined;
-
-    const fromFull = providedFirst && providedLast ? { firstName: providedFirst, lastName: providedLast } : parseFullName(providedName || '');
-    const firstName = providedFirst || fromFull.firstName || '';
-    const lastName = providedLast || fromFull.lastName || '';
+    // Normalize name fields
+    const firstName = (userData as any).firstName || (userData as any).name?.split(' ')[0] || '';
+    const lastName =
+      (userData as any).lastName || (userData as any).name?.split(' ').slice(1).join(' ') || '';
 
     // Create user using repository (password hashing handled by Prisma repository)
     const newUser = USE_PRISMA

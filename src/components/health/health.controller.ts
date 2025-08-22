@@ -29,7 +29,7 @@ interface HealthCheck {
 
 /**
  * @swagger
- * /health:
+ * /api/v1/health:
  *   get:
  *     summary: Health check endpoint
  *     description: Returns the health status of the API and its dependencies
@@ -147,7 +147,7 @@ export const getHealth = async (_req: Request, res: Response) => {
 
 /**
  * @swagger
- * /health/ready:
+ * /api/v1/health/ready:
  *   get:
  *     summary: Readiness probe endpoint
  *     description: Returns whether the application is ready to receive traffic
@@ -214,7 +214,7 @@ export const getReadiness = async (_req: Request, res: Response) => {
 
 /**
  * @swagger
- * /health/live:
+ * /api/v1/health/live:
  *   get:
  *     summary: Liveness probe endpoint
  *     description: Returns whether the application is alive and running

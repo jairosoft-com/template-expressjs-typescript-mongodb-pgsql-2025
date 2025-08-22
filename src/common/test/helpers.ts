@@ -59,7 +59,7 @@ export function createAuthenticatedRequest(
   userId: string,
   overrides: Partial<Request> = {}
 ): Partial<Request> {
-  const token = jwt.sign({ id: userId }, config.jwt.secret, {
+  const token = jwt.sign({ userId, email: 'test@example.com' }, config.jwt.secret, {
     expiresIn: '1h',
   });
 
