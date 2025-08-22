@@ -71,7 +71,9 @@ describe('User Service', () => {
       expect(mockUserRepository.findByEmail).toHaveBeenCalledWith(registrationData.email);
       expect(bcrypt.hash).toHaveBeenCalledWith(registrationData.password, 10);
       expect(mockUserRepository.create).toHaveBeenCalledWith({
-        ...registrationData,
+        firstName: 'Test',
+        lastName: 'User',
+        email: 'test@example.com',
         password: 'hashed-password',
       });
       expect(jwt.sign).toHaveBeenCalledWith(

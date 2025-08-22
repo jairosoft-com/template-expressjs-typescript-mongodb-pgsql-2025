@@ -47,6 +47,14 @@ export class ComponentRegistry implements IComponentRegistry {
   }
 
   /**
+   * Clear all registered components (testing utility)
+   */
+  public clear(): void {
+    this.components.clear();
+    this.initialized = false;
+  }
+
+  /**
    * Initialize all registered components
    */
   public async initializeAll(): Promise<void> {
