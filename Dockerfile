@@ -42,7 +42,7 @@ FROM node:22-alpine AS production
 # Add security updates and required packages
 RUN apk update && \
     apk upgrade && \
-    apk add --no-cache dumb-init curl && \
+    apk add --no-cache dumb-init curl postgresql-client && \
     rm -rf /var/cache/apk/*
 
 # Create non-root user
@@ -76,4 +76,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 ENTRYPOINT ["dumb-init", "--"]
 
 # Run migrations and start server
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
+CMD ["sh", "-c", "until pg_isready -h ${POSTGRES_HOST:-postgres} -p ${POSTGRES_PORT:-5432} -U ${POSTGRES_USER:-postgres}; do echo 'Waiting for Postgres...'; sleep 2; done; npx prisma migrate deploy && node dist/server.js"]
