@@ -138,7 +138,7 @@ export const initializeComponents = async (app: Express): Promise<void> => {
 
   // Mount component routes
   componentRegistry.mountRoutes(app);
-  console.log(`Mounted ${componentRegistry.getStats().total} components`);
+  console.info(`Mounted ${componentRegistry.getStats().total} components`);
 };
 
 /**
@@ -147,7 +147,7 @@ export const initializeComponents = async (app: Express): Promise<void> => {
 export const shutdownComponents = async (): Promise<void> => {
   try {
     await componentRegistry.shutdownAll();
-    console.log('All components shut down gracefully');
+    console.info('All components shut down gracefully');
   } catch (error) {
     console.error('Error shutting down components:', error);
   }
