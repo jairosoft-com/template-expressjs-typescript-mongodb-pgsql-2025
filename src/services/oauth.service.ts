@@ -191,7 +191,7 @@ class OAuthService {
       // Create new user
       const { firstName, lastName } = parseFullName(profile.displayName);
 
-      const newUser = await userRepository.createUser({
+      const _newUser = await userRepository.createUser({
         email,
         firstName,
         lastName,

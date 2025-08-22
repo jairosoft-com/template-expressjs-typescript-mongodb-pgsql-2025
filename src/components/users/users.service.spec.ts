@@ -1,4 +1,3 @@
-import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import {
   registerNewUser,
@@ -14,7 +13,6 @@ import config from '@/config';
 
 // Mock dependencies
 jest.mock('@/repositories/user.repository');
-jest.mock('bcryptjs');
 jest.mock('jsonwebtoken');
 jest.mock('@/config', () => ({
   jwt: {

@@ -2,7 +2,6 @@ import speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
 import logger from '@common/utils/logger';
 import config from '@/config';
 import { userRepository } from '@/repositories/user.repository';
@@ -190,7 +189,7 @@ class TwoFactorService {
   /**
    * Get remaining backup codes count
    */
-  async getRemainingBackupCodes(userId: string): Promise<number> {
+  async getRemainingBackupCodes(_userId: string): Promise<number> {
     // This would require a method to count unused backup codes
     // For now, return a default value
     return 10;
