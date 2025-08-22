@@ -41,18 +41,38 @@ export class UserService extends BaseService {
       throw ApiError.conflict('Email already in use');
     }
 
+    // Normalize name fields with utility for better international support
+    const providedFirst = (userData as any).firstName as string | undefined;
+    const providedLast = (userData as any).lastName as string | undefined;
+    const providedName = (userData as any).name as string | undefined;
+
+    const fromFull = providedFirst && providedLast ? { firstName: providedFirst, lastName: providedLast } : parseFullName(providedName || '');
+    const firstName = providedFirst || fromFull.firstName || '';
+    const lastName = providedLast || fromFull.lastName || '';
+
     // Create user using repository (password hashing handled by Prisma repository)
     const newUser = USE_PRISMA
-      ? await this.repository.createUser(userData)
+      ? await this.repository.createUser({
+          email: userData.email,
+          password: userData.password,
+          firstName,
+          lastName,
+        })
       : await this.repository.create({
-          ...userData,
+          firstName,
+          lastName,
+          email: userData.email,
           password: await bcrypt.hash(userData.password, 10),
         });
 
     // Generate JWT token
-    const token = jwt.sign({ id: newUser.id }, config.jwt.secret, {
-      expiresIn: config.jwt.expiresIn,
-    } as jwt.SignOptions);
+    const token = jwt.sign(
+      { userId: newUser.id, email: newUser.email },
+      config.jwt.secret,
+      {
+        expiresIn: config.jwt.expiresIn,
+      } as jwt.SignOptions
+    );
 
     return { user: newUser, token };
   }
@@ -124,9 +144,13 @@ export class UserService extends BaseService {
     };
 
     // Generate JWT token
-    const token = jwt.sign({ id: user.id }, config.jwt.secret, {
-      expiresIn: config.jwt.expiresIn,
-    } as jwt.SignOptions);
+    const token = jwt.sign(
+      { userId: user.id, email: user.email },
+      config.jwt.secret,
+      {
+        expiresIn: config.jwt.expiresIn,
+      } as jwt.SignOptions
+    );
 
     return { user: userPublicData, token };
   }
