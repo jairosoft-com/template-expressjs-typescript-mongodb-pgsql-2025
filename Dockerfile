@@ -36,8 +36,6 @@ ENV npm_config_lifecycle_event=ignore
 RUN npm ci --omit=dev --ignore-scripts && \
     npx prisma generate && \
     npm cache clean --force
-    npx prisma generate && \
-    npm cache clean --force
 
 # Stage 4: Production
 FROM node:22-alpine AS production
