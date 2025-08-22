@@ -1,8 +1,8 @@
-# **A Human- and AI-Friendly Project Template for Node.js Microservices**
+# **A Human- and AI-Friendly Project Template for Express.js Microservices with Prisma**
 
 ## **Section 1: Architectural Foundations for Modern Microservices**
 
-This report presents a definitive, production-ready project template for building microservices with Node.js and the Express.js framework. The architecture is designed to be robust, scalable, and maintainable, adhering to the latest industry best practices. A primary design goal is to create a template that is equally intelligible to both human developers and modern AI coding assistants, fostering a new paradigm of hybrid development. This section establishes the foundational principles that govern the template's design, focusing not just on the "how" but, more importantly, the "why" behind each architectural decision.
+This report presents a definitive, production-ready project template for building microservices with Node.js and the Express.js framework, enhanced with Prisma ORM integration. The architecture is designed to be robust, scalable, and maintainable, adhering to the latest industry best practices. A primary design goal is to create a template that is equally intelligible to both human developers and modern AI coding assistants, fostering a new paradigm of hybrid development. This section establishes the foundational principles that govern the template's design, focusing not just on the "how" but, more importantly, the "why" behind each architectural decision.
 
 ### **1.1 The Twelve-Factor App: A Guiding Philosophy**
 
@@ -32,7 +32,16 @@ The benefits of this approach are substantial:
 
 This architectural choice is not merely stylistic; it is a fundamental prerequisite for building true microservices. While many introductory tutorials demonstrate a layered structure, a template designed for a microservices world must prioritize domain-centric organization from its inception. It aligns the code structure with the business architecture, setting the stage for sustainable growth and evolution.
 
-### **1.3 Designing for a Hybrid Team: Principles of Human and AI Intelligibility**
+### **1.3 The Core Philosophy: Components + Prisma as Single Source of Truth**
+
+This template is built on two key ideas:
+
+1. **Component-Driven Architecture**: Each business feature is encapsulated in its own self-contained "component" directory.  
+2. **Prisma as Single Source of Truth for Data**: Prisma's schema.prisma file acts as the unambiguous, central definition for all data models and database relations.
+
+This combination is powerful. The schema.prisma provides a clear blueprint that AI tools excel at understanding, while the component structure keeps the business logic neatly organized. With Prisma integration, the component folders are leaner because the data model definition has been moved to the central schema.prisma file.
+
+### **1.4 Designing for a Hybrid Team: Principles of Human and AI Intelligibility**
 
 The unique requirement for this template to be understood by both human developers and AI coding assistants necessitates a design philosophy that prioritizes clarity, predictability, and explicitness. This goes beyond simple code formatting and influences the core architectural patterns of the template.
 
@@ -43,88 +52,75 @@ The following principles are foundational to this hybrid development approach:
 * **Self-Documentation through Code:** The template leverages clear, descriptive naming for all files, directories, variables, and functions. Furthermore, it mandates the use of TypeScript, whose static type system serves as a rich, machine-readable form of documentation for data structures, function signatures, and API contracts. This provides invaluable context that AI tools can parse and utilize.  
 * **The `README.md` as a Project "System Prompt":** The `README.md` file is the primary entry point for any developer, human or AI, approaching the project. It must be treated not as passive documentation but as an active specification for the project's "operating system."
 
-This last principle is transformative. Just as a well-crafted prompt is essential for eliciting a high-quality response from a generative AI, a well-structured `README.md` can serve as a persistent "system prompt" or set of "custom instructions" for an AI code assistant. By explicitly stating the architectural rules in the
+This last principle is transformative. Just as a well-crafted prompt is essential for eliciting a high-quality response from a generative AI, a well-structured `README.md` can serve as a persistent "system prompt" or set of "custom instructions" for an AI code assistant. By explicitly stating the architectural rules in the README.md—for example, "This project follows a component-driven architecture. To add a new feature, create a new directory under `/src/components` that includes `.routes.ts`, `.controller.ts`, and `.service.ts` files"—we are directly instructing the AI on how to generate new code that conforms to the template's standards. This elevates the `README.md` from a simple text file to an active configuration manifest for AI-assisted development, directly addressing the user's most forward-thinking requirement.
 
-`README.md`—for example, "This project follows a component-driven architecture. To add a new feature, create a new directory under `/src/components` that includes `.routes.ts`, `.controller.ts`, and `.service.ts` files"—we are directly instructing the AI on how to generate new code that conforms to the template's standards. This elevates the `README.md` from a simple text file to an active configuration manifest for AI-assisted development, directly addressing the user's most forward-thinking requirement.
-
-## **Section 2: Blueprint of the Express.js Microservice Template**
+## **Section 2: Blueprint of the Express.js + Prisma Microservice Template**
 
 This section provides the detailed file and directory structure for the microservice template. Each element is designed with purpose, adhering to the principles of separation of concerns, clarity, and maintainability. The structure is logical and predictable, providing a solid foundation for both human developers and AI assistants to build upon.
 
-### **2.1 A Common, Layered Foundation: The MVC and Service Pattern**
-
-A common and effective best practice for structuring Node.js projects is to separate concerns into distinct layers, a practice that greatly enhances modularity and maintainability. This layered approach, often a variation of the Model-View-Controller (MVC) pattern, ensures that different parts of the application have clear and distinct responsibilities. The most widely adopted structure includes the following directories :
-
-* **Routes**: This layer is exclusively responsible for defining the API endpoints. It maps incoming HTTP requests (e.g., `GET /users`, `POST /users`) to the appropriate controller functions that will handle them.  
-* **Controllers**: Controllers act as the intermediary between the HTTP request/response cycle and the application's internal business logic. A controller's job is to parse incoming request data (like parameters, queries, and body), call the relevant business logic from a service, and then format and send the final response back to the client. A key best practice is to keep controllers lean and free of business logic, delegating that work to the service layer.  
-* **Services**: The service layer contains the core business logic of the application. It orchestrates complex operations, interacts with the data layer (models), and encapsulates the rules and processes that define what the application does. Separating business logic into services makes it more reusable, testable, and independent of the web layer.  
-* **Models**: This layer represents the application's data structure and is responsible for all interactions with the database. It defines the schemas for data entities (e.g., using Mongoose for MongoDB or Sequelize for SQL databases) and handles the logic for creating, reading, updating, and deleting records.  
-* **Middleware**: This directory holds reusable functions that can process requests before they reach the route handlers. Common examples include functions for authentication, input validation, logging, and centralized error handling.  
-* **Config**: This directory centralizes all application configuration, particularly the loading of environment variables and the setup for database connections, ensuring a clean separation of configuration from code.
-
-While this traditional layered structure provides a solid and widely understood foundation, this template enhances it for a microservices context. It takes these distinct layers and organizes them within self-contained, feature-specific components, as detailed in the following sections. This component-driven approach builds upon the principle of separation of concerns by also promoting high cohesion and low coupling between different business domains of the application.
-
-### **2.2 Complete Project Directory Structure**
+### **2.1 Complete Project Directory Structure**
 
 The following diagram illustrates the complete directory and file structure of the project template. This structure is designed to be logical, scalable, and easy to navigate for both human developers and AI assistants.
 
-.  
-├──.dockerignore         \# Specifies files to ignore in Docker build context  
-├──.env                  \# Local environment variables (Not committed to Git)  
-├──.env.example          \# Example environment variables  
-├──.eslintrc.js          \# ESLint configuration for code quality  
-├──.gitignore            \# Specifies files to ignore in Git  
-├──.prettierrc           \# Prettier configuration for code formatting  
-├── Dockerfile            \# Defines the production Docker image (multi-stage)  
-├── docker-compose.yml    \# Defines services for local development (app, db, etc.)  
-├── jest.config.js        \# Jest testing framework configuration  
-├── package.json          \# Project manifest and dependencies  
-├── package-lock.json     \# Exact dependency versions  
-├── README.md             \# Project documentation and AI instructions  
-├── tsconfig.json         \# TypeScript compiler configuration  
+```
+/
+├── .dockerignore         # Specifies files to ignore in Docker build context  
+├── .env                  # Local environment variables (Not committed to Git)  
+├── .env.example          # Example environment variables  
+├── .eslintrc.js          # ESLint configuration for code quality  
+├── .gitignore            # Specifies files to ignore in Git  
+├── .prettierrc           # Prettier configuration for code formatting  
+├── Dockerfile            # Defines the production Docker image (multi-stage)  
+├── docker-compose.yml    # Defines services for local development (app, db, etc.)  
+├── jest.config.js        # Jest testing framework configuration  
+├── package.json          # Project manifest and dependencies  
+├── package-lock.json     # Exact dependency versions  
+├── README.md             # Project documentation and AI instructions  
+├── tsconfig.json         # TypeScript compiler configuration  
 │  
-├── prisma/               \# Prisma schema and migrations  
-│   ├── schema.prisma     \# Single source of truth for database schema  
-│   └── migrations/       \# Auto-generated SQL migration files  
+├── prisma/               # Prisma schema and migrations  
+│   ├── schema.prisma     # Single source of truth for database schema  
+│   └── migrations/       # Auto-generated SQL migration files  
 │  
-├── dist/                 \# Compiled JavaScript output from TypeScript  
+├── dist/                 # Compiled JavaScript output from TypeScript  
 │  
-└── src/                  \# Application source code  
-    ├── app.ts            \# Express app configuration and middleware setup  
-    ├── server.ts         \# Server startup, graceful shutdown, and entry point  
+└── src/                  # Application source code  
+    ├── app.ts            # Express app configuration and middleware setup  
+    ├── server.ts         # Server startup, graceful shutdown, and entry point  
     │  
-    ├── common/           \# Shared, cross-cutting concerns  
-    │   ├── middleware/   \# Reusable Express middleware  
+    ├── common/           # Shared, cross-cutting concerns  
+    │   ├── middleware/   # Reusable Express middleware  
     │   │   ├── authentication.ts  
     │   │   ├── errorHandler.ts  
     │   │   └── requestLogger.ts  
     │   │  
-    │   ├── types/        \# Shared TypeScript types and interfaces  
+    │   ├── types/        # Shared TypeScript types and interfaces  
     │   │   └── index.ts  
     │   │  
-    │   └── utils/        \# Generic helper functions and classes  
+    │   └── utils/        # Generic helper functions and classes  
     │       ├── ApiError.ts  
     │       └── catchAsync.ts  
     │  
-    ├── components/       \# Core application logic, organized by business feature  
-    │   ├── users/        \# Example: 'users' component  
-    │   │   ├── index.ts              \# Public API of the component (exports router)  
-    │   │   ├── users.controller.ts   \# Handles HTTP requests and responses  
-    │   │   ├── users.routes.ts       \# Defines API endpoints for the component  
-    │   │   ├── users.service.ts      \# Contains core business logic (uses Prisma Client)  
-    │   │   ├── users.test.ts         \# Unit and integration tests for the component  
-    │   │   └── users.validation.ts   \# Data validation schemas  
+    ├── components/       # Core application logic, organized by business feature  
+    │   ├── users/        # Example: 'users' component  
+    │   │   ├── index.ts              # Public API of the component (exports router)  
+    │   │   ├── users.controller.ts   # Handles HTTP requests and responses  
+    │   │   ├── users.routes.ts       # Defines API endpoints for the component  
+    │   │   ├── users.service.ts      # Contains core business logic (uses Prisma Client)  
+    │   │   ├── users.test.ts         # Unit and integration tests for the component  
+    │   │   └── users.validation.ts   # Data validation schemas  
     │   │  
-    │   └── orders/       \# Example: 'orders' component (follows same structure)  
+    │   └── orders/       # Example: 'orders' component (follows same structure)  
     │       ├── index.ts  
     │       ├── orders.controller.ts  
     │       ├──... (etc.)  
     │  
-    └── config/           \# Environment-aware configuration loading  
-        ├── index.ts      \# Loads and validates config from environment variables  
-        └── prisma.ts     \# Prisma Client configuration and instance
+    └── config/           # Environment-aware configuration loading  
+        ├── index.ts      # Loads and validates config from environment variables  
+        └── prisma.ts     # Prisma Client configuration and instance
+```
 
-### **2.3 Root-Level Configuration**
+### **2.2 Root-Level Configuration**
 
 The root of the project contains configuration files that define the project's environment, dependencies, scripts, and quality control settings.
 
@@ -145,20 +141,27 @@ The root of the project contains configuration files that define the project's e
 * `.gitignore` and `.dockerignore`: These files are essential for preventing unnecessary or sensitive files from being included in the Git repository or the Docker image build context. Common entries include `/node_modules`, `/dist`, `.env`, and log files.  
 * `jest.config.js`: This file configures the Jest testing framework, specifying test environments, coverage reporters, and other testing-related settings. This is detailed in Section 3\.
 
+### **2.3 The Prisma Directory: Single Source of Truth for Data**
+
+The inclusion of the `prisma` directory at the root is a key change that sets this template apart:
+
+* **`prisma/schema.prisma`**: This is the most important new file. It is the **single source of truth** for your database schema. You define all your models, fields, and relations here in a simple, declarative language that is easily parsable by AI tools and human developers alike.
+* **`prisma/migrations/`**: Prisma automatically generates SQL migration files here when you run the `prisma migrate dev` command. You should commit this folder to version control to ensure database schema changes are tracked.
+
 The following table summarizes the core dependencies recommended for this template and the rationale behind their selection.
 
 | Package | Purpose in Template | Rationale for Selection |
 | :---- | :---- | :---- |
 | `express` | Web framework for API routing and middleware. | Industry standard for Node.js, offering a minimal yet powerful API with a vast ecosystem of middleware. |
 | `typescript` | Superset of JavaScript that adds static typing. | Enforces type safety, improves code quality and maintainability, and provides excellent tooling support, which is critical for large-scale applications and AI understanding. |
+| `@prisma/client` | Type-safe database client with auto-generated types. | Provides a modern, type-safe database client that generates TypeScript types from the Prisma schema, ensuring compile-time safety for all database operations. |
+| `prisma` | Database toolkit and ORM for Node.js and TypeScript. | Offers a declarative schema definition, automatic migration generation, and excellent developer experience with IntelliSense support. |
 | `pino` | High-performance structured JSON logger. | Chosen over alternatives like Winston for its superior performance and low overhead in high-throughput scenarios, a key requirement for microservices. Defaults to machine-readable JSON output. |
 | `helmet` | Middleware to set security-related HTTP headers. | Provides an essential baseline of security by default, mitigating common web vulnerabilities. Recommended by OWASP. |
 | `dotenv` | Loads environment variables from a `.env` file. | Facilitates adherence to the Twelve-Factor App principle of storing configuration in the environment for local development. |
 | `jest` & `supertest` | Testing framework and HTTP assertion library. | Jest provides an integrated "all-in-one" testing solution. Supertest allows for easy testing of HTTP endpoints without a live server, ideal for API contract testing. |
 | `standard` | JavaScript style guide, linter, and formatter. | Recommended for its "zero-configuration" approach, which simplifies setup and enforces a highly consistent, predictable style. This predictability is extremely beneficial for AI-assisted development. |
 | `opossum` | Circuit breaker implementation for fault tolerance. | A mature and widely-used Node.js module for implementing the circuit breaker pattern, essential for building resilient microservices that communicate over the network. |
-| `@prisma/client` | Type-safe database client with auto-generated types. | Provides a modern, type-safe database client that generates TypeScript types from the Prisma schema, ensuring compile-time safety for all database operations. |
-| `prisma` | Database toolkit and ORM for Node.js and TypeScript. | Offers a declarative schema definition, automatic migration generation, and excellent developer experience with IntelliSense support. |
 
 ### **2.4 The `/src` Directory: Core Application Logic**
 
@@ -191,23 +194,25 @@ To comply with the Twelve-Factor App principles, configuration must be strictly 
 import dotenv from 'dotenv';
 
 // Load.env file only in non-production environments  
-if (process.env.NODE\_ENV\!== 'production') {  
+if (process.env.NODE_ENV !== 'production') {  
   dotenv.config();  
 }
 
-const config \= {  
-  env: process.env.NODE\_ENV |
-
-* 
-
-| 'development', port: parseInt(process.env.PORT |
-
-| '3001', 10), database: { url: process.env.DATABASE\_URL, }, jwt: { secret: process.env.JWT\_SECRET, expiresIn: '1d', }, logLevel: process.env.LOG\_LEVEL |
-
-| 'info', };
+const config = {  
+  env: process.env.NODE_ENV || 'development', 
+  port: parseInt(process.env.PORT || '3001', 10), 
+  database: { 
+    url: process.env.DATABASE_URL, 
+  }, 
+  jwt: { 
+    secret: process.env.JWT_SECRET, 
+    expiresIn: '1d', 
+  }, 
+  logLevel: process.env.LOG_LEVEL || 'info', 
+};
 
 // Validate essential configuration variables  
-if (\!config.database.url ||\!config.jwt.secret) {  
+if (!config.database.url || !config.jwt.secret) {  
   console.error('FATAL ERROR: Missing essential environment variables. Check.env.example.');  
   process.exit(1);  
 }
@@ -414,12 +419,16 @@ To ensure that code quality standards are not just defined but rigorously enforc
 
 The `package.json` will be configured to link these tools together. For example:
 
-JSON  
+```json
 "lint-staged": {  
-  "\*.{js,ts}":  
+  "*.{js,ts}": [
+    "eslint --fix",
+    "prettier --write"
+  ]
 }
+```
 
-This configuration ensures that before any commit, `standard` will automatically format the staged JavaScript/TypeScript files, and then `jest` will run the relevant tests for those changed files. If either of these steps fails, the commit is aborted.
+This configuration ensures that before any commit, ESLint will automatically fix any fixable issues, and then Prettier will format the staged JavaScript/TypeScript files. If either of these steps fails, the commit is aborted.
 
 ### **3.3 A Multi-Layered Testing Strategy: Unit, Integration, and API Testing**
 
@@ -441,60 +450,220 @@ The following table provides a checklist mapping common OWASP risks to the speci
 
 | OWASP Top 10 Risk | Mitigation Strategy in Template | Relevant Tool(s) / File(s) |
 | :---- | :---- | :---- |
-| **A01:2021 \- Broken Access Control** | Enforce authorization checks in middleware or route handlers. A stub for Role-Based Access Control (RBAC) is provided. | `/common/middleware/auth.ts` |
-| **A02:2021 \- Cryptographic Failures** | Hash passwords using a strong, salted algorithm (`bcrypt`). Use HTTPS with HSTS in production environments. | `/common/utils/password.ts`, `app.ts` (via `helmet`) |
-| **A03:2021 \- Injection** | Use a modern ORM/ODM (e.g., Sequelize, TypeORM) that provides parameterized queries to prevent SQL injection. Validate and sanitize all user input. | `/components/*/model.ts`, `/components/*/validation.ts` (using `Joi` or `class-validator`) |
-| **A04:2021 \- Insecure Design** | Implement rate limiting to prevent brute-force attacks. Follow the principle of least privilege. | `/common/middleware/rateLimiter.ts` (using `express-rate-limit`), `Dockerfile` (non-root user) |
-| **A05:2021 \- Security Misconfiguration** | Use `helmet` middleware to set secure HTTP headers by default. Disable the `X-Powered-By` header. Disable stack traces in production. | `app.ts` (`app.use(helmet())`, `app.disable('x-powered-by')`), `/config/index.ts` (`NODE_ENV`) |
-| **A07:2021 \- Identification and Authentication Failures** | Implement secure authentication using JWTs. Enforce strong password policies. Provide hooks for Multi-Factor Authentication (MFA). | `/common/middleware/auth.ts`, `/components/auth/auth.service.ts` |
-| **A08:2021 \- Software and Data Integrity Failures** | Use `package-lock.json` for dependency integrity. Regularly scan for vulnerable dependencies using `npm audit` or Snyk. | `package-lock.json`, CI/CD pipeline configuration |
-| **A09:2021 \- Security Logging and Monitoring Failures** | Implement structured, centralized logging. Ensure logs are formatted to be easily consumed by monitoring tools and do not contain sensitive data. | `/config/logger.ts` (using `pino`), `/common/middleware/errorHandler.ts` |
-
-Export to Sheets
+| **A01:2021 - Broken Access Control** | Enforce authorization checks in middleware or route handlers. A stub for Role-Based Access Control (RBAC) is provided. | `/common/middleware/auth.ts` |
+| **A02:2021 - Cryptographic Failures** | Hash passwords using a strong, salted algorithm (`bcrypt`). Use HTTPS with HSTS in production environments. | `/common/utils/password.ts`, `app.ts` (via `helmet`) |
+| **A03:2021 - Injection** | Use Prisma ORM that provides parameterized queries to prevent SQL injection. Validate and sanitize all user input. | `/components/*/validation.ts` (using `Joi` or `class-validator`) |
+| **A04:2021 - Insecure Design** | Implement rate limiting to prevent brute-force attacks. Follow the principle of least privilege. | `/common/middleware/rateLimiter.ts` (using `express-rate-limit`), `Dockerfile` (non-root user) |
+| **A05:2021 - Security Misconfiguration** | Use `helmet` middleware to set secure HTTP headers by default. Disable the `X-Powered-By` header. Disable stack traces in production. | `app.ts` (`app.use(helmet())`, `app.disable('x-powered-by')`), `/config/index.ts` (`NODE_ENV`) |
+| **A07:2021 - Identification and Authentication Failures** | Implement secure authentication using JWTs. Enforce strong password policies. Provide hooks for Multi-Factor Authentication (MFA). | `/common/middleware/auth.ts`, `/components/auth/auth.service.ts` |
+| **A08:2021 - Software and Data Integrity Failures** | Use `package-lock.json` for dependency integrity. Regularly scan for vulnerable dependencies using `npm audit` or Snyk. | `package-lock.json`, CI/CD pipeline configuration |
+| **A09:2021 - Security Logging and Monitoring Failures** | Implement structured, centralized logging. Ensure logs are formatted to be easily consumed by monitoring tools and do not contain sensitive data. | `/config/logger.ts` (using `pino`), `/common/middleware/errorHandler.ts` |
 
 By embedding these security controls directly into the template, it establishes a secure-by-default posture, reducing the likelihood of common vulnerabilities being introduced during development.
 
-## **Section 4: Observability and Resilience**
+## **Section 4: Prisma Development Workflow and Best Practices**
 
-In a distributed microservices architecture, individual services must be designed as good "citizens" of the larger ecosystem. This means they must be observable, allowing operators to understand their internal state from the outside, and resilient, capable of handling failures in their dependencies without causing a system-wide collapse. This section outlines the template's built-in capabilities for robust logging, error handling, and fault tolerance.
+This section provides comprehensive guidance on working with Prisma in the context of the AI-friendly microservice template, including development workflows, testing strategies, and production deployment considerations.
 
-### **4.1 High-Performance Structured Logging with Pino**
+### **4.1 Prisma Development Workflow**
 
-Effective logging is the cornerstone of observability. In a microservices environment, where requests may traverse multiple services, logs are the primary tool for debugging, monitoring, and tracing application behavior. To be effective, logs must be structured (machine-readable) and logging itself must not become a performance bottleneck.
+#### **4.1.1 Initial Setup**
+```bash
+# Install Prisma CLI and client
+npm install prisma @prisma/client
+npm install --save-dev prisma
 
-* **Tool Selection:** This template recommends and implements **Pino** as the default logging library. Pino is specifically optimized for speed and low overhead, making it an ideal choice for high-throughput microservices where performance is critical. It produces structured JSON logs by default, which is the preferred format for modern log aggregation and analysis platforms.  
-* **Implementation Strategy:**  
-  * **Centralized Configuration:** A logger instance is configured in a dedicated file (e.g., `/config/logger.ts`). This configuration sets the log level based on the environment (e.g., `info` in production, `debug` in development) and configures log redaction.  
-  * **Request Correlation:** A lightweight middleware is used to inject the logger instance into every request object (`req.log`). This middleware also generates a unique `requestId` for each incoming request, which is then included in every log message generated during the lifecycle of that request. This allows for easy filtering and tracing of all log entries related to a single API call.  
-  * **Structured Context:** When logging, developers should pass objects as the first argument to the logger (e.g., `req.log.info({ user: userId }, 'User logged in')`). Pino merges this object into the final JSON log line, providing rich, queryable context.  
-  * **Sensitive Data Redaction:** To prevent sensitive information like passwords, API keys, or personal data from leaking into logs, Pino's built-in redaction feature is used. Paths to sensitive fields in logged objects are defined in the logger configuration, and Pino automatically replaces their values with a placeholder like \`\`.
+# Initialize Prisma (creates prisma/ directory and schema.prisma)
+npx prisma init
 
-### **4.2 A Robust and Centralized Error Handling Architecture**
+# Generate Prisma Client after schema changes
+npx prisma generate
+```
 
-A consistent and predictable error handling strategy is essential for creating a reliable API and simplifying debugging. Instead of scattering `try...catch` blocks throughout the controllers, this template implements a centralized error handling mechanism.
+#### **4.1.2 Schema Development**
+```bash
+# Start Prisma Studio for visual database management
+npx prisma studio
 
-* **Implementation Strategy:**  
-  * **Custom `ApiError` Class:** A custom error class, `ApiError`, is defined in `/common/utils`. This class extends the native `Error` object and adds properties such as `statusCode` (an HTTP status code) and `isOperational` (a boolean to distinguish between operational errors, which are expected, and programmer errors). This allows developers to throw structured, HTTP-aware errors from anywhere in the application (e.g., `throw new ApiError(404, 'User not found')`).  
-  * **Centralized Error Middleware:** A dedicated Express error-handling middleware is defined in `/common/middleware/errorHandler.ts`. This middleware has a special signature of `(err, req, res, next)` and **must** be the very last middleware registered in `app.ts`. It is responsible for:  
-    1. Catching all errors that occur in the application, whether thrown synchronously or passed via `next(err)` from an async handler.  
-    2. Determining the appropriate HTTP status code and response message. If the error is an instance of `ApiError`, it uses the status code and message from the error object. Otherwise, it defaults to a generic `500 Internal Server Error`.  
-    3. Logging the error with its full stack trace using the request-scoped Pino logger (`req.log.error(err)`). This ensures that all errors are recorded for analysis.  
-    4. Sending a well-formatted JSON error response to the client. In production, stack traces and other internal details are not sent to the client.  
-  * **Handling Uncaught Exceptions and Unhandled Promise Rejections:** To catch catastrophic errors that are not handled by the Express middleware, top-level process event listeners are registered in `server.ts` for `uncaughtException` and `unhandledRejection`. When these events occur, they signify that the application is in an unknown and potentially corrupt state. The best practice, which this template follows, is to log the fatal error and then initiate a graceful shutdown of the server. A process manager like PM2 or a container orchestrator should then be responsible for restarting the service. It is considered unsafe to continue running the application after such an event.
+# Format the schema file
+npx prisma format
 
-### **4.3 Fault Tolerance Patterns: Implementing Circuit Breakers and Timeouts**
+# Validate the schema
+npx prisma validate
+```
 
-Microservices are distributed systems that communicate over the network, which is inherently unreliable. A service must be designed to tolerate failures in its dependencies (e.g., other microservices, databases, third-party APIs) to prevent a single point of failure from causing a cascading outage across the entire system.
+#### **4.1.3 Database Migrations**
+```bash
+# Create and apply a new migration
+npx prisma migrate dev --name descriptive_name
 
-This template provides a foundation for implementing key fault tolerance patterns:
+# Apply pending migrations in production
+npx prisma migrate deploy
 
-* **Timeouts:** Every outbound network call made by the service must have a configured timeout. This is a non-negotiable rule. Without a timeout, a process can hang indefinitely waiting for a response from a slow or unresponsive downstream service, consuming resources and potentially blocking the Node.js event loop.  
-* **Retries with Exponential Backoff:** For transient or intermittent network failures, it is often appropriate to retry the failed operation. However, retries must be implemented carefully. The template advocates for a strategy that includes:  
-  * **Limited Attempts:** Only retry a small, fixed number of times.  
-  * **Exponential Backoff:** Increase the delay between each retry attempt exponentially (e.g., 100ms, 200ms, 400ms). This prevents the retrying service from overwhelming a downstream dependency that is already struggling to recover.  
-  * **Jitter:** Add a small, random amount of time to each backoff delay to prevent multiple instances of a service from retrying in perfect synchronization (the "thundering herd" problem).  
-* **Circuit Breaker:** This is the most critical pattern for preventing cascading failures. A circuit breaker acts as a stateful proxy for network calls. It monitors for failures, and if the failure rate for a particular dependency exceeds a configured threshold, the circuit "trips" or "opens." While the circuit is open, all subsequent calls to that dependency fail immediately without making a network request. After a timeout period, the circuit moves to a "half-open" state, allowing a single test request through. If it succeeds, the circuit closes and normal operation resumes. If it fails, the circuit opens again. This pattern allows a failing downstream service time to recover without being hammered by continuous requests.  
-* **Tooling:** To facilitate the implementation of these patterns, the template recommends and provides examples using **Opossum**. Opossum is a lightweight, mature, and widely-used circuit breaker library for Node.js. An example would show how to wrap a method in a service layer that makes an external API call with an Opossum circuit breaker, complete with timeout and retry configurations.
+# Reset database (development only)
+npx prisma migrate reset
+
+# View migration history
+npx prisma migrate status
+```
+
+### **4.2 Testing with Prisma**
+
+#### **4.2.1 Test Database Setup**
+```typescript
+// tests/setup.ts
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+beforeAll(async () => {
+  // Use test database URL
+  process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test_db';
+  
+  // Clean database before tests
+  await prisma.$executeRaw`TRUNCATE TABLE users CASCADE`;
+});
+
+afterAll(async () => {
+  await prisma.$disconnect();
+});
+```
+
+#### **4.2.2 Component Testing with Prisma**
+```typescript
+// src/components/users/users.test.ts
+import prisma from '../../config/prisma';
+import { createUser, findUserById } from './users.service';
+
+describe('User Service', () => {
+  beforeEach(async () => {
+    await prisma.user.deleteMany();
+  });
+
+  it('should create a user', async () => {
+    const userData = {
+      email: 'test@example.com',
+      password: 'hashedPassword',
+      firstName: 'John',
+      lastName: 'Doe'
+    };
+
+    const user = await createUser(userData);
+    
+    expect(user.email).toBe(userData.email);
+    expect(user.firstName).toBe(userData.firstName);
+  });
+});
+```
+
+### **4.3 Production Deployment Considerations**
+
+#### **4.3.1 Migration Strategy**
+```dockerfile
+# Dockerfile
+FROM node:lts-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev
+COPY . .
+RUN npm run build
+RUN npx prisma generate
+
+FROM node:lts-alpine AS production
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/prisma ./prisma
+
+# Apply migrations on startup
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
+```
+
+#### **4.3.2 Environment Configuration**
+```env
+# .env.example
+DATABASE_URL="postgresql://user:password@localhost:5432/mydb?schema=public"
+NODE_ENV="production"
+```
+
+### **4.4 AI-Friendly Prisma Patterns**
+
+#### **4.4.1 Consistent Service Patterns**
+```typescript
+// Standard CRUD operations pattern
+export class UserService {
+  async create(data: Prisma.UserCreateInput): Promise<User> {
+    return await prisma.user.create({ data });
+  }
+
+  async findById(id: string): Promise<User | null> {
+    return await prisma.user.findUnique({ where: { id } });
+  }
+
+  async update(id: string, data: Prisma.UserUpdateInput): Promise<User> {
+    return await prisma.user.update({ where: { id }, data });
+  }
+
+  async delete(id: string): Promise<User> {
+    return await prisma.user.delete({ where: { id } });
+  }
+
+  async findMany(params: Prisma.UserFindManyArgs): Promise<User[]> {
+    return await prisma.user.findMany(params);
+  }
+}
+```
+
+#### **4.4.2 Type-Safe Query Building**
+```typescript
+// Leverage Prisma's type system for complex queries
+export const findUsersWithOrders = async (): Promise<User[]> => {
+  return await prisma.user.findMany({
+    include: {
+      orders: {
+        where: {
+          status: 'CONFIRMED'
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      }
+    },
+    where: {
+      email: {
+        contains: '@example.com'
+      }
+    }
+  });
+};
+```
+
+### **4.5 Schema Evolution Best Practices**
+
+#### **4.5.1 Backward-Compatible Changes**
+```prisma
+// Add optional fields to avoid breaking existing data
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  // New optional field
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+```
+
+#### **4.5.2 Migration Naming Conventions**
+```bash
+# Use descriptive names for migrations
+npx prisma migrate dev --name add_user_phone_field
+npx prisma migrate dev --name create_order_status_enum
+npx prisma migrate dev --name add_user_order_relationship
+```
 
 ## **Section 5: Containerization and Development Workflow**
 
@@ -543,7 +712,7 @@ An effective development workflow requires the ability to debug code seamlessly.
 * **Port Forwarding:** The `docker-compose.yml` file maps port 9229 from the container to the host machine.  
 * **IDE Configuration:** With this setup, a developer can configure their IDE (like Visual Studio Code) with a `launch.json` file to "Attach to Node Process." The IDE will connect to `localhost:9229` on the host machine, and Docker will forward that connection to the Node.js inspector running inside the container. This allows for a full-featured debugging experience, including setting breakpoints, inspecting variables, and stepping through code, all while the application runs within its consistent, containerized environment.
 
-## **Section 6: The Definitive `README.md`: The Interface for Human and AI Developers**
+## **Section 6: The Definitive README.md: The Interface for Human and AI Developers**
 
 In a modern development ecosystem where teams are composed of both human and AI collaborators, the `README.md` file transcends its traditional role as simple documentation. It becomes the central specification, the primary interface, and the "system prompt" for the entire project. A well-architected `README.md` is the most critical component for achieving the goal of a template that is equally intelligible and actionable for all developers, regardless of whether they are human or machine.
 
@@ -561,90 +730,7 @@ A high-impact `README.md` must be structured, scannable, and comprehensive. It s
 * **Running Tests:** Instructions on how to execute the various test suites (e.g., `npm test` to run all tests, `npm run test:watch` for interactive development).  
 * **API Reference:** This section should provide a link to the service's API documentation. Ideally, this would be an OpenAPI (Swagger) specification, which can be generated automatically from code annotations or a separate YAML file.  
 * **Configuration:** A crucial section for both humans and automation. It must contain a table listing every environment variable the application uses, its purpose, whether it is required, and its default value (if any). This removes all ambiguity about how to configure the service.  
-* **Contributing:** Guidelines for developers who wish to contribute to the project. This is another key area for providing explicit instructions to AI assistants. It should detail the process for creating a new component, the branching strategy, and the pull request process. Example: *"To add a new feature, create a new directory in `/src/components`. This directory must contain `.routes.ts`, `.controller.ts`, and `.service.ts` files, following the structure of the existing `users` component."*.  
-* **License:** A clear statement of the project's open-source license (e.g., MIT, Apache 2.0).
-
-### **6.2 A Complete, Annotated `README.md` Template**
-
-The following is a complete, annotated template for the `README.md` file. The annotations (in the form of blockquotes) explain the purpose of each section and highlight how it is designed to be consumed by both human and AI developers.
-
----
-
-# **Microservice**
-
-([https://img.shields.io/travis/com/your-org/your-repo.svg?style=flat-square](https://img.shields.io/travis/com/your-org/your-repo.svg?style=flat-square))\]([https://travis-ci.com/your-org/your-repo](https://travis-ci.com/your-org/your-repo)) ([https://img.shields.io/codecov/c/github/your-org/your-repo.svg?style=flat-square](https://img.shields.io/codecov/c/github/your-org/your-repo.svg?style=flat-square))\]([https://codecov.io/gh/your-org/your-repo](https://codecov.io/gh/your-org/your-repo))
-
-**Annotation:** Start with a clear title and essential badges. This provides immediate context and status information. AI tools can parse this metadata to understand the project's health and licensing.
-
-## **Description**
-
-This microservice is responsible for managing user profiles, authentication, and authorization within the ecosystem. It exposes a RESTful API for creating, retrieving, updating, and deleting user accounts.
-
-**Annotation:** A concise, high-level summary. It clearly states the service's bounded context and primary function.
-
-## **Table of Contents**
-
-* \-(\#running-for-development) \-(\#running-tests) \-(\#api-documentation)
-
-**Annotation:** Essential for navigation in a detailed README. The links allow both humans and tools to parse the document structure.
-
-## **Architectural Principles**
-
-This project adheres to a set of strict architectural principles to ensure consistency, maintainability, and scalability.
-
-* **Twelve-Factor App:** This service follows the(). All configuration is provided via environment variables, and logs are treated as event streams to `stdout`.  
-* **Component-Driven Architecture:** The codebase is organized by business feature, not by technical layer. All source code for a specific feature (e.g., users, products) is co-located in a directory under `/src/components`. Each component directory contains its own routes, controllers, services, and tests.  
-* **Prisma as Single Source of Truth:** All database models and relationships are defined in `/prisma/schema.prisma`, providing a centralized, declarative data definition that is easily parsable by AI tools and human developers alike.  
-* **Code Style:** This project uses() for all TypeScript code. All code is automatically formatted on commit.
-
-**Annotation:** This is the "system prompt" for the AI. It explicitly states the core rules of the codebase. An AI assistant reading this will understand that new features must be created as components and that all configuration must come from the environment.
-
-## **Prerequisites**
-
-* (version specified in `.nvmrc`) \-() \-()
-
-## **Installation**
-
-1. Clone the repository:  
-2. Create a local environment file from the example:  
-3. Populate the `.env` file with your local configuration. See the section for details.
-
-**Annotation:** Clear, step-by-step instructions that are easy for anyone (or any script) to follow.
-
-## **Running for Development**
-
-To start the service and all its backing services (like the database), run the following command:
-
-The service will be available at `http://localhost:3001`. The API is configured with live-reloading, so any changes to the source code will automatically restart the server.
-
-**Annotation:** Provides the single, simple command needed to get the entire development environment running.
-
-## **Running Tests**
-
-To run all unit, integration, and API tests, use:
-
-To run tests in watch mode during development:
-
-## **API Documentation**
-
-This service's API is documented using the OpenAPI 3.0 standard.
-
-\-(./docs/openapi.yml) \-(http://localhost:3001/api-docs) (when the service is running)
-
-**Annotation:** Points to the formal contract of the service. AI tools can consume OpenAPI specs to understand endpoints, request/response schemas, and generate typed clients.
-
-## **Configuration**
-
-This service is configured using environment variables. The following variables are required:
-
-**Annotation:** A clear, tabular format for configuration is highly machine-readable. It serves as the definitive reference for all required environment variables.
-
-## **Contributing**
-
-Contributions are welcome\! Please follow the guidelines below.
-
-1. **Create a new branch** for your feature or bugfix.  
-2. **Add a new component:** To add a new feature, create a new directory under `/src/components`. This directory **must** contain the following files and the components should be in plural form, following the pattern of existing components:  
+* **Contributing:** Guidelines for developers who wish to contribute to the project. This is another key area for providing explicit instructions to AI assistants. It should detail the process for creating a new component, the branching strategy, and the pull request process. Example: *"To add a new feature, create a new directory in `/src/components`. This directory **must** contain the following files and the components should be in plural form, following the pattern of existing components:  
    * `[componentName]s.routes.ts`  
    * `[componentName]s.controller.ts`  
    * `[componentName]s.service.ts`  
@@ -655,217 +741,7 @@ Contributions are welcome\! Please follow the guidelines below.
 
 **Annotation:** Provides explicit, procedural instructions for contribution. The instructions for adding a new component are a direct, actionable prompt for an AI assistant tasked with creating a new feature.
 
-## **License**
-
-This project is licensed under the MIT License. See the(./LICENSE) file for details.
-
----
-
-## **Section 7: Prisma Development Workflow and Best Practices**
-
-This section provides comprehensive guidance on working with Prisma in the context of the AI-friendly microservice template, including development workflows, testing strategies, and production deployment considerations.
-
-### **7.1 Prisma Development Workflow**
-
-#### **7.1.1 Initial Setup**
-```bash
-# Install Prisma CLI and client
-npm install prisma @prisma/client
-npm install --save-dev prisma
-
-# Initialize Prisma (creates prisma/ directory and schema.prisma)
-npx prisma init
-
-# Generate Prisma Client after schema changes
-npx prisma generate
-```
-
-#### **7.1.2 Schema Development**
-```bash
-# Start Prisma Studio for visual database management
-npx prisma studio
-
-# Format the schema file
-npx prisma format
-
-# Validate the schema
-npx prisma validate
-```
-
-#### **7.1.3 Database Migrations**
-```bash
-# Create and apply a new migration
-npx prisma migrate dev --name descriptive_name
-
-# Apply pending migrations in production
-npx prisma migrate deploy
-
-# Reset database (development only)
-npx prisma migrate reset
-
-# View migration history
-npx prisma migrate status
-```
-
-### **7.2 Testing with Prisma**
-
-#### **7.2.1 Test Database Setup**
-```typescript
-// tests/setup.ts
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
-
-beforeAll(async () => {
-  // Use test database URL
-  process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test_db';
-  
-  // Clean database before tests
-  await prisma.$executeRaw`TRUNCATE TABLE users CASCADE`;
-});
-
-afterAll(async () => {
-  await prisma.$disconnect();
-});
-```
-
-#### **7.2.2 Component Testing with Prisma**
-```typescript
-// src/components/users/users.test.ts
-import prisma from '../../config/prisma';
-import { createUser, findUserById } from './users.service';
-
-describe('User Service', () => {
-  beforeEach(async () => {
-    await prisma.user.deleteMany();
-  });
-
-  it('should create a user', async () => {
-    const userData = {
-      email: 'test@example.com',
-      password: 'hashedPassword',
-      firstName: 'John',
-      lastName: 'Doe'
-    };
-
-    const user = await createUser(userData);
-    
-    expect(user.email).toBe(userData.email);
-    expect(user.firstName).toBe(userData.firstName);
-  });
-});
-```
-
-### **7.3 Production Deployment Considerations**
-
-#### **7.3.1 Migration Strategy**
-```dockerfile
-# Dockerfile
-FROM node:lts-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --omit=dev
-COPY . .
-RUN npm run build
-RUN npx prisma generate
-
-FROM node:lts-alpine AS production
-WORKDIR /app
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/prisma ./prisma
-
-# Apply migrations on startup
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
-```
-
-#### **7.3.2 Environment Configuration**
-```env
-# .env.example
-DATABASE_URL="postgresql://user:password@localhost:5432/mydb?schema=public"
-NODE_ENV="production"
-```
-
-### **7.4 AI-Friendly Prisma Patterns**
-
-#### **7.4.1 Consistent Service Patterns**
-```typescript
-// Standard CRUD operations pattern
-export class UserService {
-  async create(data: Prisma.UserCreateInput): Promise<User> {
-    return await prisma.user.create({ data });
-  }
-
-  async findById(id: string): Promise<User | null> {
-    return await prisma.user.findUnique({ where: { id } });
-  }
-
-  async update(id: string, data: Prisma.UserUpdateInput): Promise<User> {
-    return await prisma.user.update({ where: { id }, data });
-  }
-
-  async delete(id: string): Promise<User> {
-    return await prisma.user.delete({ where: { id } });
-  }
-
-  async findMany(params: Prisma.UserFindManyArgs): Promise<User[]> {
-    return await prisma.user.findMany(params);
-  }
-}
-```
-
-#### **7.4.2 Type-Safe Query Building**
-```typescript
-// Leverage Prisma's type system for complex queries
-export const findUsersWithOrders = async (): Promise<User[]> => {
-  return await prisma.user.findMany({
-    include: {
-      orders: {
-        where: {
-          status: 'CONFIRMED'
-        },
-        orderBy: {
-          createdAt: 'desc'
-        }
-      }
-    },
-    where: {
-      email: {
-        contains: '@example.com'
-      }
-    }
-  });
-};
-```
-
-### **7.5 Schema Evolution Best Practices**
-
-#### **7.5.1 Backward-Compatible Changes**
-```prisma
-// Add optional fields to avoid breaking existing data
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  firstName String
-  lastName  String
-  // New optional field
-  phone     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-```
-
-#### **7.5.2 Migration Naming Conventions**
-```bash
-# Use descriptive names for migrations
-npx prisma migrate dev --name add_user_phone_field
-npx prisma migrate dev --name create_order_status_enum
-npx prisma migrate dev --name add_user_order_relationship
-```
-
-## **Section 8: Recommendations for Organizational Adoption and Extension**
+## **Section 7: Recommendations for Organizational Adoption and Extension**
 
 This project template provides a robust foundation for developing individual microservices. However, its true value is realized when adopted as a standard across an organization. This final section provides strategic recommendations for rolling out the template and discusses advanced topics that arise when moving from a single service to a complete, interconnected microservice ecosystem.
 
@@ -897,3 +773,10 @@ A single microservice is only one node in a larger, distributed system. As an or
 
 By understanding these advanced patterns, an organization can effectively scale its use of this microservice template, moving from building individual, well-architected services to creating a cohesive, resilient, and scalable distributed system.
 
+## **Conclusion**
+
+This consolidated template provides a robust, scalable foundation for building enterprise-grade microservices with Express.js and Prisma. The component-based design, combined with modern development practices, comprehensive tooling, and Prisma integration, ensures maintainability and developer productivity while meeting performance and security requirements.
+
+The template successfully balances complexity with usability, providing powerful features while maintaining clear structure and excellent documentation. It's a testament to thoughtful software architecture and would serve as an excellent starting point for serious production applications.
+
+For implementation details and specific code examples, refer to the source code and component documentation.
