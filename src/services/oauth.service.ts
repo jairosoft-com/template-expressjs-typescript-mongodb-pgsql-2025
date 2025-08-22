@@ -7,7 +7,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import logger from '@common/utils/logger';
 import config from '@/config';
-import { UserModel } from '../database/models/user.model';
+import { userRepository } from '@/repositories/user.repository';
 import { eventService } from './event.service';
 import { parseFullName } from '@common/utils/name.utils';
 
@@ -33,7 +33,7 @@ class OAuthService {
     // Deserialize user from session
     passport.deserializeUser(async (id: string, done) => {
       try {
-        const user = await UserModel.findById(id);
+        const user = await userRepository.findById(id);
         done(null, user);
       } catch (error) {
         done(error, null);
@@ -150,31 +150,21 @@ class OAuthService {
       },
       async (email: string, password: string, done: any) => {
         try {
-          const user = await UserModel.findOne({ email });
+          const user = await userRepository.findByEmail(email);
 
           if (!user) {
-            return done(null, false, { message: 'Invalid email or password' });
+            return done(null, false, { message: 'Invalid credentials' });
           }
 
-          const isPasswordValid = await bcrypt.compare(password, user.password);
-
-          if (!isPasswordValid) {
-            return done(null, false, { message: 'Invalid email or password' });
+          const isValidPassword = await bcrypt.compare(password, user.password);
+          if (!isValidPassword) {
+            return done(null, false, { message: 'Invalid credentials' });
           }
 
-          // Check if 2FA is enabled
-          if (user.twoFactorEnabled) {
-            return done(null, false, {
-              message: 'Two-factor authentication required',
-              requires2FA: true,
-              userId: user.id,
-            });
-          }
-
-          done(null, user);
+          return done(null, user);
         } catch (error) {
-          logger.error({ error }, 'Local authentication error');
-          done(error as Error, null);
+          logger.error({ error }, 'Local strategy error');
+          return done(error, null);
         }
       }
     );
@@ -195,42 +185,36 @@ class OAuthService {
     }
 
     // Check if user exists
-    let user = await UserModel.findOne({ email });
+    let user = await userRepository.findByEmail(email);
 
     if (!user) {
       // Create new user
       const { firstName, lastName } = parseFullName(profile.displayName);
 
-      user = await UserModel.create({
+      const newUser = await userRepository.createUser({
         email,
         firstName,
         lastName,
-        password: await bcrypt.hash(Math.random().toString(36), 12), // Random password for OAuth users
-        avatar: profile.photos?.[0]?.value,
+        password: Math.random().toString(36).slice(-8), // Generate random password
         oauthProvider: provider,
         oauthProviderId: profile.id,
-        emailVerified: profile.emails?.[0]?.verified || false,
       });
 
-      logger.info(`New user created via ${provider} OAuth: ${email}`);
+      // Convert UserPublicData back to User for further operations
+      user = await userRepository.findByEmail(email);
+      if (!user) {
+        throw new Error('Failed to create user');
+      }
 
-      // Emit user registration event
-      await eventService.emitEvent(
-        'user.registered',
-        {
-          email,
-          provider,
-          method: 'oauth',
-        },
-        user.id
-      );
+      logger.info(`New user created via ${provider} OAuth: ${email}`);
     } else {
-      // Update existing user's OAuth info
-      user.oauthProvider = provider;
-      user.oauthProviderId = profile.id;
-      user.avatar = profile.photos?.[0]?.value || user.avatar;
-      user.emailVerified = profile.emails?.[0]?.verified || user.emailVerified;
-      await user.save();
+      // Update existing user with OAuth info
+      await userRepository.update(user.id, {
+        oauthProvider: provider,
+        oauthProviderId: profile.id,
+        avatar: profile.photos?.[0]?.value || user.avatar,
+        emailVerified: profile.emails?.[0]?.verified || user.emailVerified,
+      });
 
       logger.info(`Existing user logged in via ${provider} OAuth: ${email}`);
     }
@@ -295,7 +279,7 @@ class OAuthService {
    * Get user's OAuth accounts
    */
   async getUserOAuthAccounts(userId: string): Promise<any[]> {
-    const user = await UserModel.findById(userId);
+    const user = await userRepository.findById(userId);
     if (!user) return [];
 
     const accounts = [];
@@ -315,14 +299,15 @@ class OAuthService {
    * Link OAuth account to existing user
    */
   async linkOAuthAccount(userId: string, provider: string, providerId: string): Promise<void> {
-    const user = await UserModel.findById(userId);
+    const user = await userRepository.findById(userId);
     if (!user) {
       throw new Error('User not found');
     }
 
-    user.oauthProvider = provider;
-    user.oauthProviderId = providerId;
-    await user.save();
+    await userRepository.update(user.id, {
+      oauthProvider: provider,
+      oauthProviderId: providerId,
+    });
 
     logger.info(`OAuth account linked for user ${userId}: ${provider}`);
   }
@@ -331,15 +316,16 @@ class OAuthService {
    * Unlink OAuth account
    */
   async unlinkOAuthAccount(userId: string, provider: string): Promise<void> {
-    const user = await UserModel.findById(userId);
+    const user = await userRepository.findById(userId);
     if (!user) {
       throw new Error('User not found');
     }
 
     if (user.oauthProvider === provider) {
-      user.oauthProvider = undefined;
-      user.oauthProviderId = undefined;
-      await user.save();
+      await userRepository.update(user.id, {
+        oauthProvider: null,
+        oauthProviderId: null,
+      });
 
       logger.info(`OAuth account unlinked for user ${userId}: ${provider}`);
     }

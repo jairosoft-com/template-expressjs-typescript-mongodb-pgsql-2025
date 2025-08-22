@@ -8,7 +8,7 @@ import {
   deleteUserById,
   getAllUsers,
 } from './users.service';
-import { userRepository } from '@/database/repositories/user.repository';
+import { userRepository } from '@/repositories/user.repository';
 import { ApiError } from '@common/utils/ApiError';
 import config from '@/config';
 

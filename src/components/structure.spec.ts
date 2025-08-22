@@ -16,7 +16,7 @@ describe('Directory Structure Compliance', () => {
       expect(fs.existsSync(usersPath)).toBe(true);
 
       // Assert health component exists
-      const healthPath = path.join(componentsPath, 'health');
+      const healthPath = path.join(componentsPath, 'healths');
       expect(fs.existsSync(healthPath)).toBe(true);
     });
 

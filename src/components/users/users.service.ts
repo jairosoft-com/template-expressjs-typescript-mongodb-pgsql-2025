@@ -6,12 +6,8 @@ import { BaseService } from '@common/base/BaseService';
 import config from '@/config';
 import { parseFullName } from '@common/utils/name.utils';
 
-// Import both repositories for migration phase
-import { userRepository as prismaUserRepository } from '@/repositories/user.repository';
-import { userRepository as mongoUserRepository } from '@/database/repositories/user.repository';
-
-// Feature flag to switch between Mongoose and Prisma
-const USE_PRISMA = process.env.USE_PRISMA === 'true' || false;
+// Import Prisma repository
+import { userRepository } from '@/repositories/user.repository';
 
 /**
  * User Service
@@ -22,9 +18,9 @@ export class UserService extends BaseService {
 
   constructor() {
     super('users');
-    // Use Prisma repository if feature flag is enabled
-    this.repository = USE_PRISMA ? prismaUserRepository : mongoUserRepository;
-    this.logger.info(`Using ${USE_PRISMA ? 'Prisma' : 'Mongoose'} repository for users`);
+    // Use Prisma repository exclusively
+    this.repository = userRepository;
+    this.logger.info('Using Prisma repository for users');
   }
 
   /**
@@ -50,20 +46,13 @@ export class UserService extends BaseService {
     const firstName = providedFirst || fromFull.firstName || '';
     const lastName = providedLast || fromFull.lastName || '';
 
-    // Create user using repository (password hashing handled by Prisma repository)
-    const newUser = USE_PRISMA
-      ? await this.repository.createUser({
-          email: userData.email,
-          password: userData.password,
-          firstName,
-          lastName,
-        })
-      : await this.repository.create({
-          firstName,
-          lastName,
-          email: userData.email,
-          password: await bcrypt.hash(userData.password, 10),
-        });
+    // Create user using Prisma repository (password hashing handled by repository)
+    const newUser = await this.repository.createUser({
+      email: userData.email,
+      password: userData.password,
+      firstName,
+      lastName,
+    });
 
     // Generate JWT token
     const token = jwt.sign(
@@ -88,60 +77,25 @@ export class UserService extends BaseService {
     password: string
   ): Promise<{ user: UserPublicData; token: string }> {
     // Check if account is locked
-    if (USE_PRISMA) {
-      const isLocked = await this.repository.isLocked(email);
-      if (isLocked) {
-        throw ApiError.forbidden('Account is locked due to too many failed login attempts');
-      }
+    const isLocked = await this.repository.isLocked(email);
+    if (isLocked) {
+      throw ApiError.forbidden('Account is locked due to too many failed login attempts');
     }
 
     // Find user
-    const user = USE_PRISMA
-      ? await this.repository.findByEmail(email)
-      : await this.repository.findByEmailWithPassword(email);
-
+    const user = await this.repository.findByEmail(email);
     if (!user) {
-      if (USE_PRISMA) {
-        await this.repository.incrementLoginAttempts(email);
-      }
-      throw ApiError.unauthorized('Invalid credentials');
+      throw ApiError.notFound('User not found');
     }
 
     // Verify password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      if (USE_PRISMA) {
-        await this.repository.incrementLoginAttempts(email);
-      }
+    const isValidPassword = await this.repository.verifyPassword(email, password);
+    if (!isValidPassword) {
       throw ApiError.unauthorized('Invalid credentials');
     }
 
-    // Reset login attempts on successful login
-    if (USE_PRISMA) {
-      await this.repository.resetLoginAttempts(user.id);
-    }
-
-    // Prepare user public data
-    let firstName: string;
-    let lastName: string;
-
-    if (USE_PRISMA) {
-      firstName = user.firstName;
-      lastName = user.lastName;
-    } else {
-      const parsed = parseFullName(user.name);
-      firstName = parsed.firstName;
-      lastName = parsed.lastName;
-    }
-
-    const userPublicData: UserPublicData = {
-      id: user.id,
-      email: user.email,
-      firstName,
-      lastName,
-      avatar: USE_PRISMA ? user.avatar : undefined,
-      emailVerified: USE_PRISMA ? user.emailVerified : false,
-    };
+    // Update last login
+    await this.repository.updateLastLogin(email);
 
     // Generate JWT token
     const token = jwt.sign(
@@ -152,7 +106,18 @@ export class UserService extends BaseService {
       } as jwt.SignOptions
     );
 
-    return { user: userPublicData, token };
+    // Return user data and token
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        avatar: user.avatar,
+        emailVerified: user.emailVerified,
+      },
+      token,
+    };
   }
 
   /**
@@ -166,18 +131,14 @@ export class UserService extends BaseService {
       throw ApiError.notFound('User not found');
     }
 
-    if (USE_PRISMA) {
-      return {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        avatar: user.avatar,
-        emailVerified: user.emailVerified,
-      };
-    }
-
-    return user;
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      avatar: user.avatar,
+      emailVerified: user.emailVerified,
+    };
   }
 
   /**
@@ -190,15 +151,20 @@ export class UserService extends BaseService {
     id: string,
     updateData: Partial<UserRegistrationInput>
   ): Promise<UserPublicData> {
-    const updatedUser = USE_PRISMA
-      ? await this.repository.updateUser(id, updateData)
-      : await this.repository.updateById(id, updateData);
+    const updatedUser = await this.repository.updateUser(id, updateData);
 
     if (!updatedUser) {
       throw ApiError.notFound('User not found');
     }
 
-    return updatedUser;
+    return {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      firstName: updatedUser.firstName,
+      lastName: updatedUser.lastName,
+      avatar: updatedUser.avatar,
+      emailVerified: updatedUser.emailVerified,
+    };
   }
 
   /**
@@ -207,9 +173,7 @@ export class UserService extends BaseService {
    * @returns Promise<boolean>
    */
   async deleteUserById(id: string): Promise<boolean> {
-    const deleted = USE_PRISMA
-      ? await this.repository.delete(id)
-      : await this.repository.deleteById(id);
+    const deleted = await this.repository.delete(id);
 
     if (!deleted) {
       throw ApiError.notFound('User not found');
@@ -228,16 +192,14 @@ export class UserService extends BaseService {
     limit: number = 10,
     skip: number = 0
   ): Promise<{ users: UserPublicData[]; total: number }> {
-    if (USE_PRISMA) {
-      return await this.repository.findAllUsers({
-        skip,
-        take: limit,
-        where: { active: true },
-        orderBy: { createdAt: 'desc' },
-      });
-    }
+    const { users, total } = await this.repository.findAllUsers({
+      skip,
+      take: limit,
+      where: { active: true },
+      orderBy: { createdAt: 'desc' },
+    });
 
-    return await this.repository.findAll(limit, skip);
+    return { users, total };
   }
 
   /**
@@ -247,13 +209,8 @@ export class UserService extends BaseService {
    * @param backupCodes - Array of backup codes
    */
   async enableTwoFactor(userId: string, secret: string, backupCodes: string[]): Promise<void> {
-    if (USE_PRISMA) {
-      await this.repository.enableTwoFactor(userId, secret);
-      await this.repository.addBackupCodes(userId, backupCodes);
-    } else {
-      // Mongoose implementation would go here
-      throw new Error('Two-factor authentication not implemented for Mongoose');
-    }
+    await this.repository.enableTwoFactor(userId, secret);
+    await this.repository.addBackupCodes(userId, backupCodes);
   }
 
   /**
@@ -263,12 +220,7 @@ export class UserService extends BaseService {
    * @returns Promise<boolean>
    */
   async verifyBackupCode(userId: string, code: string): Promise<boolean> {
-    if (USE_PRISMA) {
-      return await this.repository.useBackupCode(userId, code);
-    }
-
-    // Mongoose implementation would go here
-    return false;
+    return await this.repository.useBackupCode(userId, code);
   }
 }
 

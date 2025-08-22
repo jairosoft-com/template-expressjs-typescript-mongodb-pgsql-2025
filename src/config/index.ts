@@ -17,7 +17,6 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default('24h'),
 
   // Database Configuration
-  MONGODB_URI: z.string().default('mongodb://localhost:27017/express-template'),
   POSTGRES_HOST: z.string().default('localhost'),
   POSTGRES_PORT: z.string().default('5432').transform(Number),
   POSTGRES_DB: z.string().default('express_template'),
@@ -55,10 +54,6 @@ const config = {
   jwt: {
     secret: parsedEnv.data.JWT_SECRET,
     expiresIn: parsedEnv.data.JWT_EXPIRES_IN,
-  },
-
-  mongo: {
-    uri: parsedEnv.data.MONGODB_URI,
   },
 
   postgres: {

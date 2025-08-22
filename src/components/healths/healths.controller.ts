@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import { connectMongo } from '@/database/mongo';
 import logger from '@common/utils/logger';
 import config from '@/config';
 
@@ -11,7 +10,6 @@ interface HealthStatus {
   version: string;
   checks: {
     database: {
-      mongodb: HealthCheck;
       postgres: HealthCheck;
       redis: HealthCheck;
     };
@@ -65,8 +63,6 @@ interface HealthCheck {
  *                     database:
  *                       type: object
  *                       properties:
- *                         mongodb:
- *                           $ref: '#/components/schemas/HealthCheck'
  *                         postgres:
  *                           $ref: '#/components/schemas/HealthCheck'
  *                         redis:
@@ -98,24 +94,7 @@ export const getHealth = async (_req: Request, res: Response) => {
     const systemChecks = checkSystemResources();
 
     // Determine overall health status
-    const allChecks = [
-      dbChecks.mongodb,
-      dbChecks.postgres,
-      dbChecks.redis,
-      systemChecks.memory,
-      systemChecks.disk,
-    ];
-
-    const unhealthyChecks = allChecks.filter((check) => check.status === 'unhealthy');
-    // Note: HealthCheck interface only supports 'healthy' | 'unhealthy', not 'degraded'
-    // const degradedChecks = allChecks.filter((check) => check.status === 'degraded');
-
-    let overallStatus: 'healthy' | 'unhealthy' | 'degraded' = 'healthy';
-
-    if (unhealthyChecks.length > 0) {
-      overallStatus = 'unhealthy';
-    }
-    // Removed degraded status check as it's not supported by HealthCheck interface
+    const overallStatus = determineOverallStatus(dbChecks, systemChecks);
 
     const healthStatus: HealthStatus = {
       status: overallStatus,
@@ -125,17 +104,16 @@ export const getHealth = async (_req: Request, res: Response) => {
       version: '1.0.0',
       checks: {
         database: dbChecks,
-        memory: systemChecks.memory,
-        disk: systemChecks.disk,
+        ...systemChecks,
       },
     };
 
+    // Set appropriate status code
     const statusCode = overallStatus === 'healthy' ? 200 : 503;
 
     res.status(statusCode).json(healthStatus);
   } catch (error) {
     logger.error({ error }, 'Health check failed');
-
     res.status(503).json({
       status: 'unhealthy',
       message: 'Health check failed',
@@ -185,7 +163,7 @@ export const getReadiness = async (_req: Request, res: Response) => {
   try {
     // Check if all critical dependencies are available
     const dbChecks = await checkDatabases();
-    const criticalChecks = [dbChecks.mongodb, dbChecks.postgres, dbChecks.redis];
+    const criticalChecks = [dbChecks.postgres, dbChecks.redis];
 
     const isReady = criticalChecks.every((check) => check.status === 'healthy');
 
@@ -250,82 +228,15 @@ export const getLiveness = (_req: Request, res: Response) => {
  * Check database connections
  */
 const checkDatabases = async (): Promise<{
-  mongodb: HealthCheck;
   postgres: HealthCheck;
   redis: HealthCheck;
 }> => {
   const checks = {
-    mongodb: await checkMongoDB(),
     postgres: await checkPostgreSQL(),
     redis: await checkRedis(),
   };
 
   return checks;
-};
-
-/**
- * Check MongoDB connection
- */
-const checkMongoDB = async (): Promise<HealthCheck> => {
-  const startTime = Date.now();
-
-  try {
-    // Try to connect to MongoDB
-    await connectMongo();
-
-    // Import mongoose to check connection state
-    const { default: mongoose } = await import('mongoose');
-
-    // Check if the connection is in the connected state before any operations
-    // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
-    if (mongoose.connection.readyState !== 1) {
-      const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
-      const currentState = states[mongoose.connection.readyState] || 'unknown';
-      throw new Error(
-        `MongoDB connection is not in a connected state. Current state: ${currentState} (${mongoose.connection.readyState})`
-      );
-    }
-
-    // After verifying connection state, check if database object exists
-    if (!mongoose.connection.db) {
-      throw new Error('MongoDB database connection not established despite connected state');
-    }
-
-    // Get admin database for ping - this should be safe after connection checks
-    const adminDb = mongoose.connection.db.admin();
-    if (!adminDb) {
-      throw new Error('MongoDB admin database not available despite valid connection');
-    }
-
-    // Ping the database to verify it's responsive
-    await adminDb.ping();
-
-    const responseTime = Date.now() - startTime;
-
-    return {
-      status: 'healthy',
-      message: 'MongoDB connection is healthy',
-      responseTime,
-      details: {
-        database: mongoose.connection.name || 'unknown',
-        host: mongoose.connection.host || 'unknown',
-        port: mongoose.connection.port || 27017,
-        readyState: mongoose.connection.readyState,
-        readyStateText: 'connected',
-      },
-    };
-  } catch (error) {
-    const responseTime = Date.now() - startTime;
-
-    return {
-      status: 'unhealthy',
-      message: 'MongoDB connection failed',
-      responseTime,
-      details: {
-        error: error instanceof Error ? error.message : 'Unknown error',
-      },
-    };
-  }
 };
 
 /**
@@ -453,4 +364,32 @@ const checkSystemResources = (): {
     memory: memoryCheck,
     disk: diskCheck,
   };
+};
+
+/**
+ * Determine overall health status based on checks.
+ * Returns 'healthy', 'unhealthy', or 'degraded' if any critical dependency is unhealthy.
+ */
+const determineOverallStatus = (
+  dbChecks: {
+    postgres: HealthCheck;
+    redis: HealthCheck;
+  },
+  systemChecks: {
+    memory: HealthCheck;
+    disk: HealthCheck;
+  }
+): 'healthy' | 'unhealthy' | 'degraded' => {
+  const unhealthyChecks = [
+    dbChecks.postgres,
+    dbChecks.redis,
+    systemChecks.memory,
+    systemChecks.disk,
+  ].filter((check) => check.status === 'unhealthy');
+
+  if (unhealthyChecks.length > 0) {
+    return 'unhealthy';
+  }
+
+  return 'healthy';
 };

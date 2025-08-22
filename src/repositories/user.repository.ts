@@ -42,6 +42,21 @@ export class UserRepository extends BaseRepository<
   }
 
   /**
+   * Find a user by ID
+   */
+  async findById(id: string): Promise<User | null> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id },
+      });
+      return user;
+    } catch (error) {
+      this.logger.error({ err: error, id }, 'Error finding user by ID');
+      throw error;
+    }
+  }
+
+  /**
    * Find a user by OAuth provider
    */
   async findByOAuthProvider(provider: string, providerId: string): Promise<User | null> {

@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import logger from '@common/utils/logger';
 import config from '@/config';
-import { UserModel } from '../database/models/user.model';
+import { userRepository } from '@/repositories/user.repository';
 import { eventService } from './event.service';
 
 interface TwoFactorSecret {
@@ -44,7 +44,7 @@ class TwoFactorService {
     const backupCodes = this.generateBackupCodes();
 
     // Store secret in user document
-    await UserModel.findByIdAndUpdate(userId, {
+    await userRepository.updateUser(userId, {
       twoFactorSecret: secret.base32,
       twoFactorBackupCodes: backupCodes.map((code) => ({
         code: bcrypt.hashSync(code, 12),
@@ -66,7 +66,7 @@ class TwoFactorService {
    * Verify 2FA token
    */
   async verifyToken(userId: string, verification: TwoFactorVerification): Promise<boolean> {
-    const user = await UserModel.findById(userId);
+    const user = await userRepository.findUserById(userId);
     if (!user || !user.twoFactorSecret) {
       throw new Error('2FA not set up for this user');
     }
@@ -117,7 +117,7 @@ class TwoFactorService {
         // Mark backup code as used
         storedCode.used = true;
         storedCode.usedAt = new Date();
-        await user.save();
+        await userRepository.updateUser(user.id, { twoFactorBackupCodes: user.twoFactorBackupCodes });
 
         logger.info(`Backup code used for user ${user.id}`);
 
@@ -148,7 +148,7 @@ class TwoFactorService {
       throw new Error('Invalid 2FA token');
     }
 
-    await UserModel.findByIdAndUpdate(userId, {
+    await userRepository.updateUser(userId, {
       twoFactorEnabled: true,
     });
 
@@ -174,7 +174,7 @@ class TwoFactorService {
       throw new Error('Invalid 2FA token');
     }
 
-    await UserModel.findByIdAndUpdate(userId, {
+    await userRepository.updateUser(userId, {
       twoFactorEnabled: false,
       twoFactorSecret: undefined,
       twoFactorBackupCodes: undefined,
@@ -207,7 +207,7 @@ class TwoFactorService {
 
     const backupCodes = this.generateBackupCodes();
 
-    await UserModel.findByIdAndUpdate(userId, {
+    await userRepository.updateUser(userId, {
       twoFactorBackupCodes: backupCodes.map((code) => ({
         code: bcrypt.hashSync(code, 12),
         used: false,
@@ -232,7 +232,7 @@ class TwoFactorService {
    * Get remaining backup codes
    */
   async getRemainingBackupCodes(userId: string): Promise<number> {
-    const user = await UserModel.findById(userId);
+    const user = await userRepository.findUserById(userId);
     if (!user || !user.twoFactorBackupCodes) {
       return 0;
     }
@@ -292,7 +292,7 @@ class TwoFactorService {
    * Check if user has 2FA enabled
    */
   async isTwoFactorEnabled(userId: string): Promise<boolean> {
-    const user = await UserModel.findById(userId);
+    const user = await userRepository.findUserById(userId);
     return user?.twoFactorEnabled || false;
   }
 
@@ -300,7 +300,7 @@ class TwoFactorService {
    * Get 2FA status for user
    */
   async getTwoFactorStatus(userId: string): Promise<any> {
-    const user = await UserModel.findById(userId);
+    const user = await userRepository.findUserById(userId);
 
     if (!user) {
       throw new Error('User not found');
@@ -359,8 +359,14 @@ class TwoFactorService {
    * Clean up expired backup codes
    */
   async cleanupExpiredBackupCodes(): Promise<void> {
-    const users = await UserModel.find({
-      'twoFactorBackupCodes.used': true,
+    const users = await userRepository.findUsers({
+      where: {
+        twoFactorBackupCodes: {
+          some: {
+            used: true,
+          },
+        },
+      },
     });
 
     let cleanedCount = 0;
@@ -379,7 +385,7 @@ class TwoFactorService {
       });
 
       if (user.twoFactorBackupCodes?.length !== originalCount) {
-        await user.save();
+        await userRepository.updateUser(user.id, { twoFactorBackupCodes: user.twoFactorBackupCodes });
         cleanedCount += originalCount - (user.twoFactorBackupCodes?.length || 0);
       }
     }
@@ -393,9 +399,13 @@ class TwoFactorService {
    * Get 2FA statistics
    */
   async getTwoFactorStatistics(): Promise<any> {
-    const totalUsers = await UserModel.countDocuments();
-    const usersWith2FA = await UserModel.countDocuments({ twoFactorEnabled: true });
-    const usersWithSecret = await UserModel.countDocuments({ twoFactorSecret: { $exists: true } });
+    const totalUsers = await userRepository.countUsers();
+    const usersWith2FA = await userRepository.countUsers({
+      where: { twoFactorEnabled: true },
+    });
+    const usersWithSecret = await userRepository.countUsers({
+      where: { twoFactorSecret: { not: null } },
+    });
 
     return {
       totalUsers,
