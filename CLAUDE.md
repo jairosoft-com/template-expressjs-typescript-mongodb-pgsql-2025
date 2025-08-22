@@ -44,6 +44,9 @@ npm run test:watch
 # Run a single test file
 npm test -- user.service.spec.ts
 
+# Run tests related to specific files (used by pre-commit hook)
+npm run test:related -- src/services/user.service.ts
+
 # Run E2E tests with Playwright (port 4010)
 npm run test:e2e
 
@@ -119,6 +122,13 @@ npm run generate:component
 
 # Generate test file for existing code
 npm run generate:test src/services/example.service.ts
+```
+
+### Mock API Server
+
+```bash
+# Start mock API server using OpenAPI spec (port 4011)
+npm run mock:api
 ```
 
 ## Architecture Overview
@@ -283,3 +293,12 @@ Older modules in `src/api/` follow a similar pattern:
 - Rate limiting enabled by default
 - Input validation on all endpoints with Zod
 - Helmet for security headers
+
+### Pre-commit Hooks
+
+Husky runs automated checks before each commit:
+1. Lints and formats staged files with lint-staged
+2. Runs type checking on the entire codebase
+3. Runs Jest tests related to staged files only
+4. Scans for console.log in non-test files (use logger instead)
+5. Exits early if no TypeScript/JavaScript files are staged
