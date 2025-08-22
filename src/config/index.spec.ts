@@ -1,4 +1,5 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import config from './index';
 
 describe('Configuration Module', () => {
   let originalEnv: NodeJS.ProcessEnv;
