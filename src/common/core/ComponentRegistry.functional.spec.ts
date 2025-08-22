@@ -224,10 +224,10 @@ describe('ComponentRegistry Functional Tests', () => {
 
       // Track mounted routes
       const mountedRoutes: Array<{ path: string, router: Router }> = [];
-      app.use = jest.fn((path: string, router: Router) => {
+      app.use = jest.fn().mockImplementation((path: string, router: Router) => {
         mountedRoutes.push({ path, router });
         return app;
-      });
+      }) as any;
 
       registry.mountRoutes(app);
 
