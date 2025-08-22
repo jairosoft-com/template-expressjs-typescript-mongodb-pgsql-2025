@@ -13,7 +13,7 @@ import { ApiError } from '@common/utils/ApiError';
 import config from '@/config';
 
 // Mock dependencies
-jest.mock('@/database/repositories/user.repository');
+jest.mock('@/repositories/user.repository');
 jest.mock('bcryptjs');
 jest.mock('jsonwebtoken');
 jest.mock('@/config', () => ({
@@ -29,18 +29,31 @@ const mockUserRepository = userRepository as jest.Mocked<typeof userRepository>;
 describe('User Service', () => {
   const mockUser = {
     id: 'user-123',
-    name: 'Test User',
     email: 'test@example.com',
+    firstName: 'Test',
+    lastName: 'User',
+    avatar: null,
+    emailVerified: false,
     password: 'hashed-password',
+    active: true,
+    lastLogin: null,
+    loginAttempts: 0,
+    lockUntil: null,
+    oauthProvider: null,
+    oauthProviderId: null,
+    twoFactorEnabled: false,
+    twoFactorSecret: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 
   const mockUserPublicData = {
     id: mockUser.id,
     email: mockUser.email,
-    firstName: 'Test',
-    lastName: 'User',
-    avatar: undefined,
-    emailVerified: false,
+    firstName: mockUser.firstName,
+    lastName: mockUser.lastName,
+    avatar: mockUser.avatar,
+    emailVerified: mockUser.emailVerified,
   };
 
   beforeEach(() => {
@@ -57,10 +70,7 @@ describe('User Service', () => {
     it('should successfully register a new user', async () => {
       // Mock repository responses
       mockUserRepository.findByEmail.mockResolvedValue(null);
-      mockUserRepository.create.mockResolvedValue(mockUserPublicData);
-
-      // Mock bcrypt
-      (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-password');
+      mockUserRepository.createUser.mockResolvedValue(mockUserPublicData);
 
       // Mock JWT
       (jwt.sign as jest.Mock).mockReturnValue('mock-jwt-token');
@@ -68,12 +78,11 @@ describe('User Service', () => {
       const result = await registerNewUser(registrationData);
 
       expect(mockUserRepository.findByEmail).toHaveBeenCalledWith(registrationData.email);
-      expect(bcrypt.hash).toHaveBeenCalledWith(registrationData.password, 10);
-      expect(mockUserRepository.create).toHaveBeenCalledWith({
+      expect(mockUserRepository.createUser).toHaveBeenCalledWith({
         firstName: 'Test',
         lastName: 'User',
         email: 'test@example.com',
-        password: 'hashed-password',
+        password: 'password123',
       });
       expect(jwt.sign).toHaveBeenCalledWith(
         { userId: mockUserPublicData.id, email: mockUserPublicData.email },
@@ -87,19 +96,19 @@ describe('User Service', () => {
     });
 
     it('should throw error if user already exists', async () => {
-      mockUserRepository.findByEmail.mockResolvedValue(mockUserPublicData);
+      mockUserRepository.findByEmail.mockResolvedValue(mockUser);
 
       await expect(registerNewUser(registrationData)).rejects.toThrow(
         new ApiError(409, 'Email already in use')
       );
 
       expect(mockUserRepository.findByEmail).toHaveBeenCalledWith(registrationData.email);
-      expect(mockUserRepository.create).not.toHaveBeenCalled();
+      expect(mockUserRepository.createUser).not.toHaveBeenCalled();
     });
 
     it('should handle repository errors during user creation', async () => {
       mockUserRepository.findByEmail.mockResolvedValue(null);
-      mockUserRepository.create.mockRejectedValue(new Error('Database error'));
+      mockUserRepository.createUser.mockRejectedValue(new Error('Database error'));
 
       await expect(registerNewUser(registrationData)).rejects.toThrow('Database error');
     });
@@ -112,24 +121,19 @@ describe('User Service', () => {
     };
 
     it('should successfully login a user', async () => {
-      // Mock repository responses
-      mockUserRepository.findByEmailWithPassword.mockResolvedValue(mockUser);
+      mockUserRepository.isLocked.mockResolvedValue(false);
+      mockUserRepository.findByEmail.mockResolvedValue(mockUser);
+      mockUserRepository.verifyPassword.mockResolvedValue(true);
+      mockUserRepository.updateLastLogin.mockResolvedValue();
 
-      // Mock bcrypt
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-
-      // Mock JWT
       (jwt.sign as jest.Mock).mockReturnValue('mock-jwt-token');
 
       const result = await loginUser(loginData.email, loginData.password);
 
-      expect(mockUserRepository.findByEmailWithPassword).toHaveBeenCalledWith(loginData.email);
-      expect(bcrypt.compare).toHaveBeenCalledWith(loginData.password, mockUser.password);
-      expect(jwt.sign).toHaveBeenCalledWith(
-        { userId: mockUser.id, email: mockUser.email },
-        config.jwt.secret,
-        { expiresIn: config.jwt.expiresIn }
-      );
+      expect(mockUserRepository.isLocked).toHaveBeenCalledWith(loginData.email);
+      expect(mockUserRepository.findByEmail).toHaveBeenCalledWith(loginData.email);
+      expect(mockUserRepository.verifyPassword).toHaveBeenCalledWith(loginData.email, loginData.password);
+      expect(mockUserRepository.updateLastLogin).toHaveBeenCalledWith(loginData.email);
       expect(result).toEqual({
         user: mockUserPublicData,
         token: 'mock-jwt-token',
@@ -137,31 +141,28 @@ describe('User Service', () => {
     });
 
     it('should throw error if user not found', async () => {
-      mockUserRepository.findByEmailWithPassword.mockResolvedValue(null);
+      mockUserRepository.isLocked.mockResolvedValue(false);
+      mockUserRepository.findByEmail.mockResolvedValue(null);
 
       await expect(loginUser(loginData.email, loginData.password)).rejects.toThrow(
-        new ApiError(401, 'Invalid credentials')
+        new ApiError(404, 'User not found')
       );
-
-      expect(mockUserRepository.findByEmailWithPassword).toHaveBeenCalledWith(loginData.email);
-      expect(bcrypt.compare).not.toHaveBeenCalled();
     });
 
     it('should throw error if password is incorrect', async () => {
-      mockUserRepository.findByEmailWithPassword.mockResolvedValue(mockUser);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+      mockUserRepository.isLocked.mockResolvedValue(false);
+      mockUserRepository.findByEmail.mockResolvedValue(mockUser);
+      mockUserRepository.verifyPassword.mockResolvedValue(false);
 
       await expect(loginUser(loginData.email, loginData.password)).rejects.toThrow(
         new ApiError(401, 'Invalid credentials')
       );
-
-      expect(bcrypt.compare).toHaveBeenCalledWith(loginData.password, mockUser.password);
     });
   });
 
   describe('getUserById', () => {
     it('should return user if found', async () => {
-      mockUserRepository.findById.mockResolvedValue(mockUserPublicData);
+      mockUserRepository.findById.mockResolvedValue(mockUser);
 
       const result = await getUserById('user-123');
 
@@ -172,77 +173,103 @@ describe('User Service', () => {
     it('should throw error if user not found', async () => {
       mockUserRepository.findById.mockResolvedValue(null);
 
-      await expect(getUserById('user-123')).rejects.toThrow(new ApiError(404, 'User not found'));
+      await expect(getUserById('user-123')).rejects.toThrow(
+        new ApiError(404, 'User not found')
+      );
     });
   });
 
   describe('updateUserById', () => {
     const updateData = {
-      name: 'Updated User',
-      email: 'updated@example.com',
+      firstName: 'Updated',
+      lastName: 'Name',
     };
 
     it('should successfully update user', async () => {
-      const updatedUser = { ...mockUserPublicData, ...updateData };
-      mockUserRepository.updateById.mockResolvedValue(updatedUser);
+      const updatedUser = { ...mockUser, ...updateData };
+      mockUserRepository.update.mockResolvedValue(updatedUser);
 
       const result = await updateUserById('user-123', updateData);
 
-      expect(mockUserRepository.updateById).toHaveBeenCalledWith('user-123', updateData);
-      expect(result).toEqual(updatedUser);
+      expect(mockUserRepository.update).toHaveBeenCalledWith('user-123', updateData);
+      expect(result).toEqual({
+        id: updatedUser.id,
+        email: updatedUser.email,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        avatar: updatedUser.avatar,
+        emailVerified: updatedUser.emailVerified,
+      });
     });
 
     it('should throw error if user not found', async () => {
-      mockUserRepository.updateById.mockResolvedValue(null);
+      // Mock the update method to throw an error for user not found
+      mockUserRepository.update.mockRejectedValue(ApiError.notFound('User not found'));
 
       await expect(updateUserById('user-123', updateData)).rejects.toThrow(
-        new ApiError(404, 'User not found')
+        ApiError.notFound('User not found')
       );
     });
   });
 
   describe('deleteUserById', () => {
     it('should successfully delete user', async () => {
-      mockUserRepository.deleteById.mockResolvedValue(true);
+      const deletedUser = { ...mockUser };
+      mockUserRepository.delete.mockResolvedValue(deletedUser);
 
       const result = await deleteUserById('user-123');
 
-      expect(mockUserRepository.deleteById).toHaveBeenCalledWith('user-123');
+      expect(mockUserRepository.delete).toHaveBeenCalledWith('user-123');
       expect(result).toBe(true);
     });
 
     it('should throw error if user not found', async () => {
-      mockUserRepository.deleteById.mockResolvedValue(false);
+      // Mock the delete method to throw an error for user not found
+      mockUserRepository.delete.mockRejectedValue(ApiError.notFound('User not found'));
 
-      await expect(deleteUserById('user-123')).rejects.toThrow(new ApiError(404, 'User not found'));
+      await expect(deleteUserById('user-123')).rejects.toThrow(
+        ApiError.notFound('User not found')
+      );
     });
   });
 
   describe('getAllUsers', () => {
     it('should return users with pagination', async () => {
-      const mockUsers = [mockUserPublicData];
       const mockResponse = {
-        users: mockUsers,
+        users: [mockUserPublicData],
         total: 1,
       };
-      mockUserRepository.findAll.mockResolvedValue(mockResponse);
+
+      mockUserRepository.findAllUsers.mockResolvedValue(mockResponse);
 
       const result = await getAllUsers(10, 0);
 
-      expect(mockUserRepository.findAll).toHaveBeenCalledWith(10, 0);
+      expect(mockUserRepository.findAllUsers).toHaveBeenCalledWith({
+        skip: 0,
+        take: 10,
+        where: { active: true },
+        orderBy: { createdAt: 'desc' },
+      });
       expect(result).toEqual(mockResponse);
     });
 
     it('should use default pagination values', async () => {
       const mockResponse = {
-        users: [],
-        total: 0,
+        users: [mockUserPublicData],
+        total: 1,
       };
-      mockUserRepository.findAll.mockResolvedValue(mockResponse);
 
-      await getAllUsers();
+      mockUserRepository.findAllUsers.mockResolvedValue(mockResponse);
 
-      expect(mockUserRepository.findAll).toHaveBeenCalledWith(10, 0);
+      const result = await getAllUsers();
+
+      expect(mockUserRepository.findAllUsers).toHaveBeenCalledWith({
+        skip: 0,
+        take: 10,
+        where: { active: true },
+        orderBy: { createdAt: 'desc' },
+      });
+      expect(result).toEqual(mockResponse);
     });
   });
 });

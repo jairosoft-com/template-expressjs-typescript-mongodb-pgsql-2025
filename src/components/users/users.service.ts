@@ -151,7 +151,7 @@ export class UserService extends BaseService {
     id: string,
     updateData: Partial<UserRegistrationInput>
   ): Promise<UserPublicData> {
-    const updatedUser = await this.repository.updateUser(id, updateData);
+    const updatedUser = await this.repository.update(id, updateData);
 
     if (!updatedUser) {
       throw ApiError.notFound('User not found');
