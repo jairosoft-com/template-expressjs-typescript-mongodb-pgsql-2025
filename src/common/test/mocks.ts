@@ -197,35 +197,6 @@ export function createMockApp() {
 }
 
 /**
- * Create a mock Mongoose model
- */
-export function createMockMongooseModel() {
-  return {
-    find: jest.fn().mockReturnThis(),
-    findOne: jest.fn().mockReturnThis(),
-    findById: jest.fn().mockReturnThis(),
-    findByIdAndUpdate: jest.fn().mockReturnThis(),
-    findByIdAndDelete: jest.fn().mockReturnThis(),
-    findOneAndUpdate: jest.fn().mockReturnThis(),
-    findOneAndDelete: jest.fn().mockReturnThis(),
-    create: jest.fn(),
-    updateOne: jest.fn(),
-    updateMany: jest.fn(),
-    deleteOne: jest.fn(),
-    deleteMany: jest.fn(),
-    countDocuments: jest.fn(),
-    aggregate: jest.fn(),
-    populate: jest.fn().mockReturnThis(),
-    select: jest.fn().mockReturnThis(),
-    limit: jest.fn().mockReturnThis(),
-    skip: jest.fn().mockReturnThis(),
-    sort: jest.fn().mockReturnThis(),
-    exec: jest.fn(),
-    lean: jest.fn().mockReturnThis(),
-  };
-}
-
-/**
  * Mock environment variables for testing
  */
 export function mockEnvironment(overrides: Record<string, string> = {}) {
@@ -236,7 +207,6 @@ export function mockEnvironment(overrides: Record<string, string> = {}) {
     NODE_ENV: 'test',
     JWT_SECRET: 'test-secret-key-for-jwt-that-is-at-least-32-characters-long',
     DATABASE_URL: 'postgresql://test:test@localhost:5432/test',
-    MONGODB_URI: 'mongodb://localhost:27017/test',
     REDIS_URL: 'redis://localhost:6379',
     ...overrides,
   };

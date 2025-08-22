@@ -213,16 +213,10 @@ describe('Docker Configuration Validation', () => {
 
 describe('Health Check Validation', () => {
   it('should have health check endpoints configured', () => {
-    const healthController = readFileSync('src/components/health/health.controller.ts', 'utf8');
+    const healthController = readFileSync('src/components/healths/healths.controller.ts', 'utf8');
     expect(healthController).toContain('getHealth');
     expect(healthController).toContain('getReadiness');
     expect(healthController).toContain('getLiveness');
-  });
-
-  it('should have MongoDB connection state validation', () => {
-    const healthController = readFileSync('src/components/health/health.controller.ts', 'utf8');
-    expect(healthController).toContain('readyState');
-    expect(healthController).toContain('connected state');
   });
 });
 

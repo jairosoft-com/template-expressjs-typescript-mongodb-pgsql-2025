@@ -74,7 +74,6 @@ PORT=4010
 NODE_ENV=development
 
 # Database Configuration
-MONGODB_URI=mongodb://localhost:27017/express-template
 POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_DB=express_template

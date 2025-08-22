@@ -1,6 +1,6 @@
 import { BaseComponent } from '@common/base/BaseComponent';
 import { IComponentMetadata } from '@common/types/component';
-import healthRouter from './health.routes';
+import healthRouter from './healths.routes';
 
 /**
  * Health Component
@@ -9,7 +9,7 @@ import healthRouter from './health.routes';
 class HealthComponent extends BaseComponent {
   constructor() {
     const metadata: IComponentMetadata = {
-      name: 'health',
+      name: 'healths',
       version: '1',
       description: 'Health check and monitoring endpoints',
       enabled: true,
@@ -35,7 +35,7 @@ class HealthComponent extends BaseComponent {
     await super.initialize();
 
     // Health component doesn't need special initialization
-    this.logger.info('Health component ready');
+    this.logger.info('Healths component ready');
   }
 
   /**
@@ -45,7 +45,7 @@ class HealthComponent extends BaseComponent {
     await super.shutdown();
 
     // Health component doesn't need special cleanup
-    this.logger.info('Health component shutdown complete');
+    this.logger.info('Healths component shutdown complete');
   }
 }
 

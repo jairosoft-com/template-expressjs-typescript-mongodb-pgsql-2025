@@ -180,7 +180,7 @@ const options = {
             },
             message: {
               type: 'string',
-              example: 'MongoDB connection is healthy',
+              example: 'PostgreSQL connection is healthy',
             },
             responseTime: {
               type: 'number',
@@ -199,7 +199,7 @@ const options = {
                 },
                 port: {
                   type: 'number',
-                  example: 27017,
+                  example: 5432,
                 },
               },
             },
@@ -237,9 +237,6 @@ const options = {
                 database: {
                   type: 'object',
                   properties: {
-                    mongodb: {
-                      $ref: '#/components/schemas/HealthCheck',
-                    },
                     postgres: {
                       $ref: '#/components/schemas/HealthCheck',
                     },

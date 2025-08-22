@@ -42,6 +42,21 @@ export class UserRepository extends BaseRepository<
   }
 
   /**
+   * Find a user by ID
+   */
+  async findById(id: string): Promise<User | null> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id },
+      });
+      return user;
+    } catch (error) {
+      this.logger.error({ err: error, id }, 'Error finding user by ID');
+      throw error;
+    }
+  }
+
+  /**
    * Find a user by OAuth provider
    */
   async findByOAuthProvider(provider: string, providerId: string): Promise<User | null> {
@@ -134,97 +149,6 @@ export class UserRepository extends BaseRepository<
         throw ApiError.conflict('Email already exists');
       }
       this.logger.error({ err: error, id }, 'Error updating user');
-      throw error;
-    }
-  }
-
-  /**
-   * Verify user password
-   */
-  async verifyPassword(userId: string, password: string): Promise<boolean> {
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { password: true },
-      });
-
-      if (!user) {
-        return false;
-      }
-
-      return bcrypt.compare(password, user.password);
-    } catch (error) {
-      this.logger.error({ err: error, userId }, 'Error verifying password');
-      throw error;
-    }
-  }
-
-  /**
-   * Increment login attempts
-   */
-  async incrementLoginAttempts(email: string): Promise<void> {
-    try {
-      const user = await this.findByEmail(email);
-      if (!user) return;
-
-      const attempts = user.loginAttempts + 1;
-      const lockUntil =
-        attempts >= SECURITY.LOGIN.MAX_ATTEMPTS
-          ? new Date(Date.now() + SECURITY.LOGIN.LOCK_DURATION_MS)
-          : null;
-
-      await this.prisma.user.update({
-        where: { id: user.id },
-        data: {
-          loginAttempts: attempts,
-          lockUntil,
-        },
-      });
-    } catch (error) {
-      this.logger.error({ err: error, email }, 'Error incrementing login attempts');
-      throw error;
-    }
-  }
-
-  /**
-   * Reset login attempts
-   */
-  async resetLoginAttempts(userId: string): Promise<void> {
-    try {
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: {
-          loginAttempts: 0,
-          lockUntil: null,
-          lastLogin: new Date(),
-        },
-      });
-    } catch (error) {
-      this.logger.error({ err: error, userId }, 'Error resetting login attempts');
-      throw error;
-    }
-  }
-
-  /**
-   * Check if user account is locked
-   */
-  async isLocked(email: string): Promise<boolean> {
-    try {
-      const user = await this.findByEmail(email);
-      if (!user) return false;
-
-      if (user.lockUntil && user.lockUntil > new Date()) {
-        return true;
-      }
-
-      // Unlock if lock period has expired
-      if (user.lockUntil) {
-        await this.resetLoginAttempts(user.id);
-      }
-
-      return false;
-    } catch (error) {
-      this.logger.error({ err: error, email }, 'Error checking if user is locked');
       throw error;
     }
   }
@@ -324,6 +248,96 @@ export class UserRepository extends BaseRepository<
       return { users, total };
     } catch (error) {
       this.logger.error({ err: error }, 'Error finding all users');
+      throw error;
+    }
+  }
+
+  /**
+   * Check if user account is locked
+   */
+  async isLocked(email: string): Promise<boolean> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { email: email.toLowerCase() },
+        select: { lockUntil: true },
+      });
+
+      if (!user) return false;
+
+      return user.lockUntil ? user.lockUntil > new Date() : false;
+    } catch (error) {
+      this.logger.error({ err: error, email }, 'Error checking if user is locked');
+      return false;
+    }
+  }
+
+  /**
+   * Verify password for user
+   */
+  async verifyPassword(email: string, password: string): Promise<boolean> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { email: email.toLowerCase() },
+        select: { password: true },
+      });
+
+      if (!user) return false;
+
+      return bcrypt.compareSync(password, user.password);
+    } catch (error) {
+      this.logger.error({ err: error, email }, 'Error verifying password');
+      return false;
+    }
+  }
+
+  /**
+   * Update last login for user
+   */
+  async updateLastLogin(email: string): Promise<void> {
+    try {
+      await this.prisma.user.update({
+        where: { email: email.toLowerCase() },
+        data: { lastLogin: new Date() },
+      });
+    } catch (error) {
+      this.logger.error({ err: error, email }, 'Error updating last login');
+      throw error;
+    }
+  }
+
+  /**
+   * Increment login attempts for user
+   */
+  async incrementLoginAttempts(email: string): Promise<void> {
+    try {
+      await this.prisma.user.update({
+        where: { email: email.toLowerCase() },
+        data: {
+          loginAttempts: {
+            increment: 1,
+          },
+        },
+      });
+    } catch (error) {
+      this.logger.error({ err: error, email }, 'Error incrementing login attempts');
+      throw error;
+    }
+  }
+
+  /**
+   * Reset login attempts for user
+   */
+  async resetLoginAttempts(userId: string): Promise<void> {
+    try {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          loginAttempts: 0,
+          lockUntil: null,
+        },
+      });
+    } catch (error) {
+      this.logger.error({ err: error, userId }, 'Error resetting login attempts');
       throw error;
     }
   }

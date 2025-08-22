@@ -1,24 +1,11 @@
-import { connectPostgres, closePostgres } from '../src/database/postgres';
-import { connectMongo, closeMongo } from '../src/database/mongo';
-import { connectRedis, closeRedis } from '../src/database/redis';
-import { UserModel } from '../src/database/models/user.model';
+import { faker } from '@faker-js/faker';
 import bcrypt from 'bcryptjs';
-import logger from '../src/common/utils/logger.js';
+import logger from '@common/utils/logger';
+import { connectPostgres, closePostgres } from '@/database/postgres';
+import { connectRedis, closeRedis } from '@/database/redis';
 
-interface SeedUser {
-  email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-}
-
-const seedUsers: SeedUser[] = [
-  {
-    email: 'admin@example.com',
-    password: 'admin123',
-    firstName: 'Admin',
-    lastName: 'User',
-  },
+// Sample user data for seeding
+const seedUsers = [
   {
     email: 'john.doe@example.com',
     password: 'password123',
@@ -58,36 +45,6 @@ const seedPostgres = async () => {
   }
 };
 
-const seedMongo = async () => {
-  try {
-    logger.info('Seeding MongoDB database...');
-
-    // Clear existing users
-    await UserModel.deleteMany({});
-    logger.info('Cleared existing users from MongoDB');
-
-    // Hash passwords and create users
-    const hashedUsers = await Promise.all(
-      seedUsers.map(async (user) => ({
-        ...user,
-        password: await bcrypt.hash(user.password, 12),
-      }))
-    );
-
-    // Insert users
-    const createdUsers = await UserModel.insertMany(hashedUsers);
-    logger.info(`Created ${createdUsers.length} users in MongoDB`);
-
-    // Log created users (without passwords)
-    createdUsers.forEach((user) => {
-      logger.info(`Created user: ${user.email} (${user.firstName} ${user.lastName})`);
-    });
-  } catch (error) {
-    logger.error({ error }, 'Error seeding MongoDB');
-    throw error;
-  }
-};
-
 const seedRedis = async () => {
   try {
     logger.info('Seeding Redis database...');
@@ -105,14 +62,12 @@ const seedDatabase = async () => {
   try {
     logger.info('Starting database seeding...');
 
-    // Connect to all databases
+    // Connect to databases
     await connectPostgres();
-    await connectMongo();
     await connectRedis();
 
     // Seed each database
     await seedPostgres();
-    await seedMongo();
     await seedRedis();
 
     logger.info('Database seeding completed successfully!');
@@ -122,7 +77,6 @@ const seedDatabase = async () => {
   } finally {
     // Close database connections
     await closePostgres();
-    await closeMongo();
     await closeRedis();
     process.exit(0);
   }

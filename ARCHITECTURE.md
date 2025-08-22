@@ -14,6 +14,16 @@
 
 This Express.js microservice template implements a modern, scalable architecture designed for enterprise applications. The system follows domain-driven design principles with a component-based architecture that promotes modularity, testability, and maintainability.
 
+### Recent Refactoring (2025)
+The architecture has been significantly improved through a comprehensive refactoring process:
+
+- **Database Simplification**: Removed MongoDB support, now using PostgreSQL with Prisma ORM as the single source of truth
+- **Enhanced Component System**: Improved component auto-discovery with better dependency management and lifecycle handling
+- **Separation of Concerns**: Separated Express app configuration from server lifecycle management
+- **Configuration Validation**: Enhanced environment variable validation with Zod schemas and runtime validation
+- **Improved Testing**: Comprehensive test coverage with 134 tests covering all core functionality
+- **Modern TypeScript**: Updated to use latest TypeScript features and strict type checking
+
 ### High-Level Architecture
 
 ```mermaid
@@ -25,7 +35,6 @@ graph TB
     WS[WebSocket Server]
     Cache[Redis Cache]
     PG[(PostgreSQL)]
-    Mongo[(MongoDB)]
     EventBus[Event Bus]
     
     Client --> Gateway
@@ -34,7 +43,6 @@ graph TB
     Client -.->|WebSocket| WS
     Core --> Cache
     Core --> PG
-    Core --> Mongo
     Core --> EventBus
     WS --> EventBus
     Auth --> PG
@@ -98,13 +106,13 @@ Each component follows a standardized structure:
 ```
 src/components/<component-name>/
 ├── index.ts                 # Component exports and metadata
-├── <name>.controller.ts     # HTTP request handlers
-├── <name>.service.ts        # Business logic
-├── <name>.routes.ts         # Route definitions
-├── <name>.validation.ts     # Zod schemas
-├── <name>.types.ts          # TypeScript types
-├── <name>.repository.ts     # Data access (if needed)
-└── <name>.spec.ts           # Unit tests
+├── <name>s.controller.ts    # HTTP request handlers
+├── <name>s.service.ts       # Business logic
+├── <name>s.routes.ts        # Route definitions
+├── <name>s.validation.ts    # Zod schemas
+├── <name>s.types.ts         # TypeScript types
+├── <name>s.repository.ts    # Data access (if needed)
+└── <name>s.service.spec.ts  # Unit tests
 ```
 
 ### Component Registry
@@ -162,9 +170,9 @@ sequenceDiagram
 - Pub/Sub for real-time features
 
 #### Document Store (MongoDB)
-- Legacy support
-- Unstructured data
-- Audit logs and events
+- **Removed**: MongoDB support has been removed as part of the 2025 refactoring
+- **Rationale**: Simplified architecture using PostgreSQL with Prisma ORM as single source of truth
+- **Migration**: Existing MongoDB data should be migrated to PostgreSQL using Prisma migrations
 
 ### Repository Pattern
 

@@ -31,7 +31,11 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 # Install only production dependencies
-RUN npm ci --omit=dev && \
+ENV HUSKY=0
+ENV npm_config_lifecycle_event=ignore
+RUN npm ci --omit=dev --ignore-scripts && \
+    npx prisma generate && \
+    npm cache clean --force
     npx prisma generate && \
     npm cache clean --force
 

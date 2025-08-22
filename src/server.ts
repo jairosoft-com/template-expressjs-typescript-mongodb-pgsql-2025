@@ -1,23 +1,9 @@
-import express, { Express, Request, Response, NextFunction } from 'express';
-import helmet from 'helmet';
-import cors from 'cors';
-import rateLimit from 'express-rate-limit';
 import config from '@/config';
 import logger from '@common/utils/logger';
 import { connectPostgres, closePostgres } from '@/database/postgres';
-import { connectMongo, closeMongo } from '@/database/mongo';
 import { connectRedis, closeRedis } from '@/database/redis';
-import { errorMiddleware } from '@common/middleware/error.middleware';
 import { ApiError } from '@common/utils/ApiError';
-import { componentRegistry } from '@common/core/ComponentRegistry';
-import { join } from 'path';
-import { setupSwagger } from '@/config/swagger';
-import {
-  requestLogger,
-  responseLogger,
-  errorLogger,
-  performanceMonitor,
-} from '@common/middleware/logging.middleware';
+import { getApp, shutdownComponents } from '@/app';
 
 // Phase 5: Real-time Features
 import { socketService } from '@/services/socket.service';
@@ -28,109 +14,6 @@ import { oauthService } from '@/services/oauth.service';
 
 // Phase 5: Microservices Architecture
 import { serviceDiscoveryService } from '@/services/service-discovery.service';
-import { apiGatewayService } from '@/services/api-gateway.service';
-
-const app: Express = express();
-
-// Security Middleware
-app.use(helmet());
-app.use(cors({ origin: config.corsOrigin }));
-
-// General rate limiting for all requests
-const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  message: {
-    status: 'error',
-    statusCode: 429,
-    message: 'Too many requests from this IP, please try again later.',
-  },
-});
-
-// Stricter rate limiting for authentication endpoints
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 requests per windowMs for auth endpoints
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    status: 'error',
-    statusCode: 429,
-    message: 'Too many authentication attempts, please try again later.',
-  },
-});
-
-// Apply general rate limiting to all requests
-app.use(generalLimiter);
-
-// Parse request bodies
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Setup Swagger documentation
-setupSwagger(app);
-
-// Logging and monitoring middleware
-app.use(requestLogger);
-app.use(responseLogger);
-app.use(performanceMonitor);
-
-/**
- * @swagger
- * /:
- *   get:
- *     summary: Health check endpoint
- *     description: Returns the health status of the API
- *     tags: [Health]
- *     responses:
- *       200:
- *         description: API is healthy
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/HealthCheck'
- *             example:
- *               message: "API is healthy"
- *               timestamp: "2025-01-15T10:30:00Z"
- *               uptime: 12345.67
- *               environment: "development"
- *       500:
- *         description: API is unhealthy
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *             example:
- *               status: "error"
- *               statusCode: 500
- *               message: "API is unhealthy"
- */
-app.get('/', (_req: Request, res: Response) => {
-  res.status(200).json({
-    message: 'API is healthy',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: config.nodeEnv,
-  });
-});
-
-// Apply stricter rate limiting to authentication endpoints
-app.use('/api/v1/users/login', authLimiter);
-app.use('/api/v1/users/register', authLimiter);
-
-// Component auto-discovery and route mounting will happen in startServer
-
-// Phase 5: API Gateway routing
-app.use('/api/v1/gateway', (req: Request, res: Response, next: NextFunction) => {
-  apiGatewayService.routeRequest(req, res, next);
-});
-
-// Error Handling
-app.use((_req, _res, next) => next(new ApiError(404, 'Not Found')));
-app.use(errorLogger);
-app.use(errorMiddleware);
 
 /**
  * Start the server with database connections
@@ -141,24 +24,15 @@ const startServer = async () => {
     if (process.env.SKIP_DB_CONNECTION !== 'true') {
       logger.info('Connecting to databases...');
       await connectPostgres();
-      await connectMongo();
       await connectRedis();
       logger.info('All database connections established');
     } else {
       logger.info('Skipping database connections (SKIP_DB_CONNECTION=true)');
     }
 
-    // Auto-discover and register components
-    logger.info('Discovering components...');
-    const componentsPath = join(__dirname, 'components');
-    await componentRegistry.autoDiscover(componentsPath);
-
-    // Initialize all components
-    await componentRegistry.initializeAll();
-
-    // Mount component routes
-    componentRegistry.mountRoutes(app);
-    logger.info(`Mounted ${componentRegistry.getStats().total} components`);
+    // Get the configured Express app
+    const app = await getApp();
+    logger.info('Express app configured and components initialized');
 
     // Phase 5: Initialize services
     logger.info('Initializing Phase 5 services...');
@@ -222,7 +96,7 @@ const startServer = async () => {
 
         // Shutdown all components
         try {
-          await componentRegistry.shutdownAll();
+          await shutdownComponents();
         } catch (error) {
           logger.error({ error }, 'Error shutting down components');
         }
@@ -230,7 +104,6 @@ const startServer = async () => {
         // Close database connections
         try {
           await closePostgres();
-          await closeMongo();
           await closeRedis();
           logger.info('All database connections closed');
         } catch (error) {
@@ -312,5 +185,3 @@ const startServer = async () => {
 
 // Start the server
 startServer();
-
-export default app; // Export for testing
