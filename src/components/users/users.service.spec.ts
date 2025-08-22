@@ -95,6 +95,23 @@ describe('User Service', () => {
       });
     });
 
+    it('should map full name to first and last when only name is provided', async () => {
+      mockUserRepository.findByEmail.mockResolvedValue(null);
+      mockUserRepository.createUser.mockResolvedValue(mockUserPublicData);
+      (jwt.sign as jest.Mock).mockReturnValue('mock-jwt-token');
+
+      const input = { name: 'Jane Roe', email: 'jane@example.com', password: 'secretpass' };
+
+      await registerNewUser(input as any);
+
+      expect(mockUserRepository.createUser).toHaveBeenCalledWith({
+        firstName: 'Jane',
+        lastName: 'Roe',
+        email: 'jane@example.com',
+        password: 'secretpass',
+      });
+    });
+
     it('should throw error if user already exists', async () => {
       mockUserRepository.findByEmail.mockResolvedValue(mockUser);
 

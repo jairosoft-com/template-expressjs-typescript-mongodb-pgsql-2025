@@ -114,4 +114,7 @@ export interface IComponentRegistry {
 
   /** Shutdown all components */
   shutdownAll(): Promise<void>;
+
+  /** Clear all registered components (testing utility) */
+  clear(): void;
 }

@@ -38,9 +38,9 @@ export class UserService extends BaseService {
     }
 
     // Normalize name fields with utility for better international support
-    const providedFirst = (userData as any).firstName as string | undefined;
-    const providedLast = (userData as any).lastName as string | undefined;
-    const providedName = (userData as any).name as string | undefined;
+    const providedFirst = userData.firstName as string | undefined;
+    const providedLast = userData.lastName as string | undefined;
+    const providedName = userData.name as string | undefined;
 
     const fromFull = providedFirst && providedLast ? { firstName: providedFirst, lastName: providedLast } : parseFullName(providedName || '');
     const firstName = providedFirst || fromFull.firstName || '';
