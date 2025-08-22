@@ -49,10 +49,11 @@ describe('User Service', () => {
 
   describe('registerNewUser', () => {
     const registrationData = {
-      name: 'Test User',
+      firstName: 'Test',
+      lastName: 'User',
       email: 'test@example.com',
       password: 'password123',
-    };
+    } as any;
 
     it('should successfully register a new user', async () => {
       // Mock repository responses
@@ -73,9 +74,13 @@ describe('User Service', () => {
         ...registrationData,
         password: 'hashed-password',
       });
-      expect(jwt.sign).toHaveBeenCalledWith({ id: mockUserPublicData.id }, config.jwt.secret, {
-        expiresIn: config.jwt.expiresIn,
-      });
+      expect(jwt.sign).toHaveBeenCalledWith(
+        { userId: mockUserPublicData.id, email: mockUserPublicData.email },
+        config.jwt.secret,
+        {
+          expiresIn: config.jwt.expiresIn,
+        }
+      );
       expect(result).toEqual({
         user: mockUserPublicData,
         token: 'mock-jwt-token',
@@ -121,9 +126,13 @@ describe('User Service', () => {
 
       expect(mockUserRepository.findByEmailWithPassword).toHaveBeenCalledWith(loginData.email);
       expect(bcrypt.compare).toHaveBeenCalledWith(loginData.password, mockUser.password);
-      expect(jwt.sign).toHaveBeenCalledWith({ id: mockUser.id }, config.jwt.secret, {
-        expiresIn: config.jwt.expiresIn,
-      });
+      expect(jwt.sign).toHaveBeenCalledWith(
+        { userId: mockUser.id, email: mockUser.email },
+        config.jwt.secret,
+        {
+          expiresIn: config.jwt.expiresIn,
+        }
+      );
       expect(result).toEqual({
         user: mockUserPublicData,
         token: 'mock-jwt-token',

@@ -1,11 +1,27 @@
 import { z } from 'zod';
 
+// Accept either firstName/lastName or a combined name for backward compatibility
+const NameFieldsSchema = z
+  .object({
+    firstName: z.string().min(1, 'firstName is required').optional(),
+    lastName: z.string().min(1, 'lastName is required').optional(),
+    name: z.string().min(2).optional(),
+  })
+  .refine(
+    (data) => Boolean(data.name) || (Boolean(data.firstName) && Boolean(data.lastName)),
+    {
+      message: 'Provide either name or both firstName and lastName',
+      path: ['name'],
+    }
+  );
+
 export const UserRegistrationSchema = z.object({
-  body: z.object({
-    name: z.string().min(2),
-    email: z.string().email(),
-    password: z.string().min(8),
-  }),
+  body: z
+    .object({
+      email: z.string().email(),
+      password: z.string().min(8),
+    })
+    .and(NameFieldsSchema),
 });
 
 export const UserLoginSchema = z.object({

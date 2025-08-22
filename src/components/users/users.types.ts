@@ -15,3 +15,8 @@ export interface UserPublicData {
   // Legacy field for backward compatibility
   name?: string;
 }
+
+export interface JwtPayloadStandard {
+  userId: string;
+  email: string;
+}

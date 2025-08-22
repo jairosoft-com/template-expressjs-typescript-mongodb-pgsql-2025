@@ -40,7 +40,8 @@ describe('User Controller', () => {
 
   describe('registerUser', () => {
     const validRegistrationData = {
-      name: 'Test User',
+      firstName: 'Test',
+      lastName: 'User',
       email: 'test@example.com',
       password: 'password123',
     };

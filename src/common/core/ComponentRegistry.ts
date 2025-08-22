@@ -4,6 +4,7 @@ import { Logger } from 'pino';
 import { Express } from 'express';
 import { readdirSync, statSync } from 'fs';
 import { join } from 'path';
+import { pathToFileURL } from 'url';
 
 /**
  * Component Registry implementation
@@ -126,19 +127,32 @@ export class ComponentRegistry implements IComponentRegistry {
 
       for (const dir of directories) {
         const componentPath = join(componentsPath, dir);
-        const indexPath = join(componentPath, 'index.ts');
 
-        try {
-          // Check if index.ts exists
-          statSync(indexPath);
-        } catch (_error) {
-          this.logger.debug(`Skipping ${dir}: No index.ts file found in component directory`);
+        // Support both compiled JS (dist) and TS (dev)
+        const candidateFiles = ['index.js', 'index.ts'];
+        let foundPath: string | null = null;
+
+        for (const file of candidateFiles) {
+          const candidate = join(componentPath, file);
+          try {
+            statSync(candidate);
+            foundPath = candidate;
+            break;
+          } catch (_err) {
+            // try next
+          }
+        }
+
+        if (!foundPath) {
+          this.logger.debug(
+            `Skipping ${dir}: No index.js or index.ts file found in component directory`
+          );
           continue;
         }
 
         try {
-          // Try to import the component
-          const module = await import(indexPath);
+          // Use file URL for compatibility with Node ESM import
+          const module = await import(pathToFileURL(foundPath).href);
 
           if (module.default && this.isValidComponent(module.default)) {
             const component = module.default as IComponent;
