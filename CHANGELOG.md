@@ -5,6 +5,81 @@ All notable changes to the Express.js TypeScript Microservice Template project w
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2025-08-22
+
+### Summary
+Comprehensive file cleanup and repository maintenance to improve project maintainability, reduce clutter, and enhance development experience. Removed outdated files, build artifacts, and redundant documentation while maintaining full functionality and test coverage.
+
+### Added
+- **Cleanup Documentation and Planning**
+  - Comprehensive file cleanup requirements document at `prd/file_cleanup/reqs.md`
+  - Detailed task list and execution plan at `prd/file_cleanup/todo.md`
+  - Cleanup scripts in package.json for future maintenance
+
+- **Enhanced Package.json Scripts**
+  - `clean:all` - Comprehensive cleanup script for all generated and temporary files
+  - `clean:config` - Configuration file cleanup
+  - `clean:docs` - Documentation cleanup
+  - `clean:logs` - Log file cleanup
+  - `clean:system` - System file cleanup (macOS .DS_Store, etc.)
+
+- **Updated .gitignore**
+  - Added `.claude/` directory to prevent local AI settings from being committed
+  - Enhanced protection for temporary and generated files
+
+### Changed
+- **Repository Structure**
+  - Removed 8 outdated and redundant files/directories
+  - Cleaned up build artifacts and test results
+  - Streamlined project structure for better maintainability
+
+### Removed
+- **Build Artifacts**
+  - `dist/` directory (compiled JavaScript files and source maps)
+  - `generated/` directory (Prisma generated files)
+
+- **Test Results & Reports**
+  - `test-results/` directory (temporary test execution results)
+  - `playwright-report/` directory (HTML test reports)
+  - `coverage/` directory (test coverage reports)
+
+- **Outdated Configuration**
+  - `.eslintrc.json` (redundant with modern `eslint.config.mjs`)
+
+- **Archive & Temporary Files**
+  - `archives/TODO-Wed-Aug-6th.md` (outdated TODO file)
+  - `.claude/settings.local.json` (local AI settings)
+  - `.DS_Store` files (macOS system files)
+
+- **Redundant Test Files**
+  - `__tests__/` directory (legacy test structure)
+
+- **Outdated Documentation**
+  - `PROJECT_STATUS.md` (superseded by current project state)
+  - `TODO.md` (completed implementation plan)
+
+### Fixed
+- Repository clutter and maintenance overhead
+- Outdated configuration conflicts
+- Redundant test file organization
+- Local development environment cleanup
+
+### Technical Details
+- **Files Deleted**: 8 files/directories successfully removed
+- **Repository Size**: Significantly reduced clutter and build artifacts
+- **Test Coverage**: Maintained at 134/134 tests passing
+- **Build Process**: Working correctly without `dist/` directory
+- **Prisma Client**: Generation working properly
+- **No Breaking Changes**: All functionality preserved
+
+### Development Workflow
+- **Git Workflow Compliance**: Followed proper branch, commit, and PR workflow
+- **TDD Protocol**: Maintained test coverage and followed Red-Green-Refactor cycle
+- **Testing Strategy**: Comprehensive testing at all levels (unit, integration, E2E, regression)
+- **PR Process**: Successfully created and merged cleanup changes
+
+---
+
 ## [2.0.0] - 2025-08-07
 
 ### Summary
