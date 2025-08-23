@@ -326,7 +326,6 @@ graph TB
         PG[(PostgreSQL Primary)]
         PGR[(PostgreSQL Replica)]
         REDIS[(Redis Cluster)]
-        MONGO[(MongoDB Replica Set)]
     end
     
     subgraph "Supporting Services"
@@ -483,7 +482,6 @@ graph TB
     subgraph "Data Tier"
         RDS[(RDS PostgreSQL)]
         ELASTICACHE[(ElastiCache Redis)]
-        DOCDB[(DocumentDB)]
     end
     
     subgraph "Monitoring"
@@ -498,7 +496,6 @@ graph TB
     ECS --> ASG
     ECS --> RDS
     ECS --> ELASTICACHE
-    ECS --> DOCDB
     ECS --> CW
     ECS --> XRAY
 ```
