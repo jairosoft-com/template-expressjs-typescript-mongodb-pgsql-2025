@@ -143,8 +143,23 @@ const config = {
   },
 };
 
-// Make configuration immutable
-const frozenConfig = Object.freeze(config);
+// Deep freeze function to make all nested objects immutable
+function deepFreeze<T extends Record<string, any>>(obj: T): T {
+  // Freeze the object itself
+  Object.freeze(obj);
+  
+  // Recursively freeze all nested objects
+  Object.values(obj).forEach(value => {
+    if (typeof value === 'object' && value !== null) {
+      deepFreeze(value);
+    }
+  });
+  
+  return obj;
+}
+
+// Make configuration immutable (including nested objects)
+const frozenConfig = deepFreeze(config);
 
 // Configuration validation function
 export const validateConfig = () => {
