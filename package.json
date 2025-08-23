@@ -33,6 +33,11 @@
     "health": "curl -s http://localhost:4010/ | jq .",
     "docs": "echo 'API Documentation available at http://localhost:4010/api-docs'",
     "clean": "rm -rf dist test-results playwright-report test-data",
+    "clean:all": "npm run clean && rm -rf archives .claude __tests__ generated coverage",
+    "clean:config": "rm -f .eslintrc.json",
+    "clean:docs": "rm -f PROJECT_STATUS.md TODO.md",
+    "clean:logs": "rm -f *.log npm-debug.log* yarn-debug.log* yarn-error.log*",
+    "clean:system": "find . -name '.DS_Store' -delete",
     "reset": "npm run clean && npm install && npm run seed",
     "prepare": "husky"
   },
