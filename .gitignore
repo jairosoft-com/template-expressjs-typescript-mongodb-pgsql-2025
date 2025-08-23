@@ -25,3 +25,6 @@ yarn-error.log*
 /playwright-report/
 /test-results/
 /generated/prisma
+
+# AI and local settings
+.claude/
