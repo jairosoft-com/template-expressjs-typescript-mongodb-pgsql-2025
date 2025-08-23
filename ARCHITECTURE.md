@@ -99,21 +99,54 @@ graph TB
 
 ## Component Architecture
 
+### Project Structure
+
+The application follows a clear separation of concerns with centralized data access:
+
+```
+src/
+├── components/              # Feature components (auto-discovered)
+│   └── users/
+│       ├── index.ts         # Component metadata and exports
+│       ├── users.controller.ts    # HTTP request handlers
+│       ├── users.service.ts       # Business logic
+│       ├── users.routes.ts        # Route definitions
+│       ├── users.validation.ts    # Zod validation schemas
+│       ├── users.types.ts         # TypeScript interfaces
+│       └── users.service.spec.ts  # Unit tests
+├── repositories/            # Centralized data access layer
+│   ├── base.repository.ts  # Abstract base repository with CRUD
+│   └── user.repository.ts  # User-specific data operations
+├── database/               # Database connections and configuration
+│   ├── prisma.ts          # Prisma client singleton
+│   ├── postgres.ts        # PostgreSQL connection pool
+│   └── redis.ts           # Redis client setup
+└── common/                # Shared utilities and middleware
+    ├── middleware/        # Express middleware
+    ├── utils/            # Helper functions
+    └── constants/        # Application constants
+```
+
 ### Component Structure
 
-Each component follows a standardized structure:
+Each component follows a standardized structure focused on business logic:
 
 ```
 src/components/<component-name>/
 ├── index.ts                 # Component exports and metadata
 ├── <name>s.controller.ts    # HTTP request handlers
-├── <name>s.service.ts       # Business logic
+├── <name>s.service.ts       # Business logic (uses repositories)
 ├── <name>s.routes.ts        # Route definitions
 ├── <name>s.validation.ts    # Zod schemas
 ├── <name>s.types.ts         # TypeScript types
-├── <name>s.repository.ts    # Data access (if needed)
 └── <name>s.service.spec.ts  # Unit tests
 ```
+
+**Note:** Data access is handled through centralized repositories in `/src/repositories/` rather than component-specific repository files. This promotes:
+- Code reuse across components
+- Consistent data access patterns
+- Clear separation between business and data layers
+- Easier testing and mocking
 
 ### Component Registry
 
@@ -133,6 +166,8 @@ export const metadata: ComponentMetadata = {
 
 ### Inter-Component Communication
 
+Components interact through a layered architecture with clear separation of concerns:
+
 ```mermaid
 sequenceDiagram
     participant Client
@@ -142,16 +177,27 @@ sequenceDiagram
     participant Database
     participant EventBus
     
+    Note over Controller: src/components/users/users.controller.ts
+    Note over Service: src/components/users/users.service.ts
+    Note over Repository: src/repositories/user.repository.ts
+    
     Client->>Controller: HTTP Request
     Controller->>Service: Business Operation
     Service->>Repository: Data Operation
-    Repository->>Database: SQL Query
+    Repository->>Database: SQL Query (Prisma)
     Database-->>Repository: Result
     Repository-->>Service: Domain Object
     Service->>EventBus: Emit Event
     Service-->>Controller: Response Data
     Controller-->>Client: HTTP Response
 ```
+
+**Key Points:**
+- Controllers handle HTTP concerns only
+- Services contain business logic and orchestrate operations
+- Repositories (centralized in `/src/repositories/`) handle all data access
+- Services import repositories from the centralized location
+- Clear separation enables independent testing of each layer
 
 ## Data Architecture
 
@@ -176,23 +222,45 @@ sequenceDiagram
 
 ### Repository Pattern
 
+The repository pattern provides a centralized data access layer, separating database operations from business logic. All repositories are located in `/src/repositories/` for centralized management and reuse across components.
+
+**Architecture Benefits:**
+- **Centralized Data Access**: All database operations in one location (`/src/repositories/`)
+- **Shared Across Components**: Multiple components can use the same repository
+- **Consistent Patterns**: All repositories extend `BaseRepository` for uniform API
+- **Testability**: Easy to mock repositories for unit testing services
+- **Database Abstraction**: Business logic remains independent of database implementation
+
 ```typescript
-// Base repository with generic CRUD
+// src/repositories/base.repository.ts
 abstract class BaseRepository<T, CreateDTO, UpdateDTO> {
-  protected abstract model: PrismaModelDelegate;
+  protected prisma: PrismaClient;
+  protected modelName: Prisma.ModelName;
   
   async findById(id: string): Promise<T | null>
   async findMany(filter: FilterQuery): Promise<T[]>
   async create(data: CreateDTO): Promise<T>
   async update(id: string, data: UpdateDTO): Promise<T>
   async delete(id: string): Promise<void>
+  async transaction<R>(fn: (tx: any) => Promise<R>): Promise<R>
 }
 
-// Specific repository with domain logic
+// src/repositories/user.repository.ts
 class UserRepository extends BaseRepository<User, CreateUserDTO, UpdateUserDTO> {
   async findByEmail(email: string): Promise<User | null>
   async verifyPassword(user: User, password: string): Promise<boolean>
   async incrementLoginAttempts(userId: string): Promise<void>
+}
+
+// Usage in components - src/components/users/users.service.ts
+import { UserRepository } from '@/repositories/user.repository';
+
+class UsersService {
+  private userRepository = new UserRepository();
+  
+  async getUser(id: string) {
+    return this.userRepository.findById(id);
+  }
 }
 ```
 
